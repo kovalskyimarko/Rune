@@ -17,8 +17,8 @@ struct editorConfig {
     struct termios originalTermSettings;
     int cx; /* Cursor x position (0 to Screen Width - 1) */
     int cy; /* Cursor y position (0 to Screen Height -1) */
-    int screenHeight;
     int screenWidth;
+    int screenHeight;
 };
 
 struct editorConfig E;
