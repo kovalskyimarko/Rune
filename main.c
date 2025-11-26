@@ -1,7 +1,6 @@
 #include <termios.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -9,9 +8,9 @@
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 #define CLEAR_SCREEN "\x1b[2J"
-#define CLEAR_SCREEN_B 4
+#define CLEAR_SCREEN_B sizeof(CLEAR_SCREEN) - 1
 #define MOVE_CURSOR_HOME "\x1b[H"
-#define MOVE_CURSOR_HOME_B 3
+#define MOVE_CURSOR_HOME_B sizeof(MOVE_CURSOR_HOME) - 1
 
 struct editorConfig {
     struct termios originalTermSettings;
@@ -23,17 +22,16 @@ struct editorConfig {
 
 struct editorConfig E;
 
+void disableRawMode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.originalTermSettings);
+}
+
 void error(const char* eMessage) {
+    disableRawMode();
     write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
     write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
     perror(eMessage);
     exit(1);
-}
-
-void disableRawMode() {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.originalTermSettings) == -1) {
-        error("tcsetattr");
-    }
 }
 
 void enableRawMode() {
@@ -69,15 +67,17 @@ void enableRawMode() {
     raw.c_oflag &= ~(OPOST);
 
     /* Control flags - Set character size to 8 bits per byte */
+    raw.c_cflag &= ~CSIZE; 
     raw.c_cflag |= (CS8);
 
     /*
       Control characters - Set read timeout
-      VMIN = 0: return as soon as any data is available
-      VTIME = 1: wait up up 100 milliseconds
+      VMIN = 1: wait until 1 byte
+      VTIME = 0: return as fast as possible
     */
-    raw.c_cc[VMIN] = 0;
-    raw.c_cc[VTIME] = 1;
+    raw.c_cc[VMIN] = 1;
+    raw.c_cc[VTIME] = 0;
+
 
     /* Apply the new attributes to STDIN_FILENO */
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) 
@@ -88,7 +88,8 @@ int readKey() {
     char c;
     int n;
 
-    while (n == read(STDIN_FILENO, &c, 1) != 1) {
+    /* Keep looping until we read exactly 1 byte */
+    while ((n =read(STDIN_FILENO, &c, 1)) != 1) {
         if (n == -1 && errno != EAGAIN) {
             error("read");
         }
@@ -107,7 +108,7 @@ void processKey(int c) {
 
 void getWindowSize(int *rows, int *cols) {
     struct winsize ws;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
         error("ioctl");
     }
 
