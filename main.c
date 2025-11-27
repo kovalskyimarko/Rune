@@ -13,6 +13,8 @@ void error(const char* eMessage) {
 void init() {
     E.cx = 0;
     E.cy = 0;
+    E.numrows = 0;
+    E.numcols = 0;
     getWindowSize(&E.screenHeight, &E.screenWidth);
 }
 
@@ -21,6 +23,7 @@ int main() {
     enableRawMode();
 
     while (1) {
+        refreshScreen();
         int c = readKey();
         processKey(c);
     }

@@ -5,7 +5,7 @@ CC = gcc-15
 CFLAGS = -Wall -Wextra -pedantic -std=c11 -O2
 
 # Source files
-SRCS = main.c terminal.c input.c
+SRCS = main.c terminal.c input.c output.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
