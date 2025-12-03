@@ -14,7 +14,8 @@ void init() {
     E.cx = 0;
     E.cy = 0;
     E.numrows = 0;
-    E.numcols = 0;
+    E.row = NULL;
+    E.coloff = 0;
     getWindowSize(&E.screenHeight, &E.screenWidth);
 }
 

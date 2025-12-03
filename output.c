@@ -10,7 +10,7 @@ typedef struct buffer {
 void bufferAppend(buffer *b, const char *s, int slen) {
     char *newbuf = realloc(b->chars, b->len + slen);
     if (newbuf == NULL) return;
-    memcpy(newbuf + b->len, s, slen);
+    memcpy(&(newbuf[b->len]), s, slen);
     b->chars = newbuf;
     b->len += slen;
 }
@@ -24,12 +24,27 @@ void appendCentered(buffer *b, const char *s) {
 }
 
 void bufferAppendRows(buffer *b) {
+    if (E.cx < E.coloff) {
+        E.coloff = E.cx;
+    }
+
+    if (E.cx >= E.coloff + E.screenWidth) {
+       E.coloff = E.cx - E.screenWidth + 1;
+    }
+
     char buf[64];
     for (int i = 0; i < E.screenHeight; i++) {
         if (E.numrows > i) {
-            // Here we will render existing rows later
-        }
+            erow *row = &E.row[i];
+            int len = row->len;
 
+            if (E.coloff < len) {
+                int visible = len - E.coloff;
+                if (visible > E.screenWidth) visible = E.screenWidth;
+
+                bufferAppend(b, &row->chars[E.coloff], visible);
+            }
+        }
         else {
             if (E.numrows == 0 && i == E.screenHeight / 2) {
                 appendCentered(b, "Rune - terminal based editor");
@@ -55,9 +70,16 @@ void refreshScreen() {
 
     bufferAppend(&b, HIDE_CURSOR, HIDE_CURSOR_B);
     bufferAppend(&b, CLEAR_SCREEN, CLEAR_SCREEN_B);
-    bufferAppendRows(&b);
     bufferAppend(&b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+    bufferAppendRows(&b);
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx - E.coloff + 1);
+    bufferAppend(&b, buf, strlen(buf));
     bufferAppend(&b, SHOW_CURSOR, SHOW_CURSOR_B);
+    //char bufT[32];
+    //snprintf(bufT, sizeof(bufT), "%d", E.cx);
+    //bufferAppend(&b, bufT, 1);
     write(STDOUT_FILENO, b.chars, b.len);
 
     free(b.chars);

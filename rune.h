@@ -21,15 +21,27 @@
 #define SHOW_CURSOR "\033[?25h"
 #define SHOW_CURSOR_B sizeof(SHOW_CURSOR) - 1
 
+enum ARROWS {
+    ARROW_UP = 1000,
+    ARROW_DOWN = 1001,
+    ARROW_LEFT = 1002,
+    ARROW_RIGHT = 1003
+};
+
+typedef struct erow {
+    char* chars;
+    int len;
+} erow;
 
 struct editorConfig {
     struct termios originalTermSettings;
-    int cx; /* Cursor x position (0 to Screen Width - 1) */
-    int cy; /* Cursor y position (0 to Screen Height -1) */
+    int cx; /* Cursor x position (position-based) */
+    int cy; /* Cursor y position (0 to Screen Height -1) (index-based)*/
     int screenWidth;
     int screenHeight;
     int numrows;
-    int numcols;
+    int coloff; /* From what position start rendering the row*/
+    erow* row;  /* Pointer to current row*/
 };
 
 extern struct editorConfig E;
