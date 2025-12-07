@@ -22,7 +22,6 @@ int readKey() {
             if (seq[1] >= '0' && seq[1] <= '9') {
                 if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
                 // Handle some other types later;
-                
             } else {
                 switch(seq[1]) {
                     case 'A': return ARROW_UP;
@@ -45,10 +44,9 @@ void deleteCharBeforeCursor() {
         erow *row = &E.row[E.cy];
         erow *prevRow = &E.row[E.cy-1];
         prevRow->chars = realloc(prevRow->chars, prevRow->len + row->len + 1);
-
         memmove(&prevRow->chars[prevRow->len], row->chars, (row->len+1));
-        //memmove(&E.row[E.cy], &E.row[E.cy+1], sizeof(erow) * (E.numrows - (E.cy + 1));
         prevRow->len += row->len;
+
         E.cx = prevRow->len;
         E.cy--;
         E.numrows--;
@@ -81,12 +79,17 @@ void insertRow(int at) {
         E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
         E.row[E.cy + 1].chars = newchars;
         E.row[E.cy + 1].len = strlen(newchars);
+
         E.cx = 0;
         E.cy++;
         E.numrows++;
     }
 
     else {
+        if (at == 0) {
+            return;
+        }
+
         erow *row = &E.row[at-1];
         char *newchars = strdup(row->chars + E.cx); // right part
         row->chars[E.cx] = '\0';
@@ -127,10 +130,11 @@ void processKey(int c) {
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
             exit(0);
             break;
+        case 'n':
         case '\r':
             insertRow(E.cy+1);
             break;
-        case 127: // Backspace
+        case 127:
         case '\b':
             deleteCharBeforeCursor();
             break;
@@ -145,11 +149,10 @@ void processKey(int c) {
         case ARROW_RIGHT:
             if (E.cx < E.row[E.cy].len) E.cx++;
             else if (E.cy + 1 < E.numrows) {
-                // move to start of next line
                 E.cy++;
-            E.cx = 0;
-        }
-        break;
+                E.cx = 0;
+            }
+            break;
         case ARROW_UP:
             if (E.cy > 0) E.cy--;
             break;
