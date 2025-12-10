@@ -46,7 +46,6 @@ void deleteCharBeforeCursor() {
         prevRow->chars = realloc(prevRow->chars, prevRow->len + row->len + 1);
         memmove(&prevRow->chars[prevRow->len], row->chars, (row->len+1));
         prevRow->len += row->len;
-
         E.cx = prevRow->len;
         E.cy--;
         E.numrows--;
@@ -77,8 +76,8 @@ void insertRow(int at) {
         row->len = E.cx;
 
         E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
-        E.row[E.cy + 1].chars = newchars;
-        E.row[E.cy + 1].len = strlen(newchars);
+        E.row[at].chars = newchars;
+        E.row[at].len = strlen(newchars);
 
         E.cx = 0;
         E.cy++;
@@ -114,6 +113,7 @@ void insertChar(int c) {
     char ch = (char)c;
 
     char* newstr = realloc(row->chars, row->len + 2);
+    if (newstr == NULL) return;
     memmove(&newstr[E.cx+1], &newstr[E.cx], (row->len - E.cx + 1));
     
     newstr[E.cx] = ch;      // store character
@@ -130,7 +130,7 @@ void processKey(int c) {
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
             exit(0);
             break;
-        case 'n':
+        case '\n':
         case '\r':
             insertRow(E.cy+1);
             break;
@@ -154,10 +154,20 @@ void processKey(int c) {
             }
             break;
         case ARROW_UP:
-            if (E.cy > 0) E.cy--;
+            if (E.cy > 0) {
+                E.cy--;
+                if (E.cx > E.row[E.cy].len) {
+                    E.cx = E.row[E.cy].len;
+                }            
+            }
             break;
         case ARROW_DOWN:
-            if (E.cy + 1 < E.numrows) E.cy++;
+            if (E.cy + 1 < E.numrows) {
+                E.cy++;
+                if (E.cx > E.row[E.cy].len) {
+                    E.cx = E.row[E.cy].len;
+                }
+            }
             break;
         
         default:
