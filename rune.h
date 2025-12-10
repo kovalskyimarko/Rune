@@ -21,11 +21,16 @@
 #define SHOW_CURSOR "\033[?25h"
 #define SHOW_CURSOR_B sizeof(SHOW_CURSOR) - 1
 
-enum ARROWS {
+enum SPECIAL_KEYS {
     ARROW_UP = 1000,
     ARROW_DOWN = 1001,
     ARROW_LEFT = 1002,
-    ARROW_RIGHT = 1003
+    ARROW_RIGHT = 1003,
+    HOME_KEY = 1004,
+    END_KEY = 1005,
+    DEL_KEY = 1006,
+    PAGE_UP = 1007,
+    PAGE_DOWN = 1008
 };
 
 typedef struct erow {
@@ -35,8 +40,8 @@ typedef struct erow {
 
 struct editorConfig {
     struct termios originalTermSettings;
-    int cx; /* Cursor x position (position-based) */
-    int cy; /* Cursor y position (0 to Screen Height -1) (index-based)*/
+    int cx; /* Cursor x position*/
+    int cy; /* Cursor y position (0 to Screen Height -1)*/
     int screenWidth;
     int screenHeight;
     int numrows;
