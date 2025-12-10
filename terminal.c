@@ -42,11 +42,11 @@ void enableRawMode() {
 
     /*
       Control characters - Set read timeout
-      VMIN = 1: wait until 1 byte
-      VTIME = 0: return as fast as possible
+      VMIN = 0: return as soon as there is any data
+      VTIME = 1: wait for 100 ms before returning 
     */
-    raw.c_cc[VMIN] = 1;
-    raw.c_cc[VTIME] = 0;
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 1;
 
 
     /* Apply the new attributes to STDIN_FILENO */
