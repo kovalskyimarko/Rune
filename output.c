@@ -9,7 +9,7 @@ typedef struct buffer {
 
 void bufferAppend(buffer *b, const char *s, int slen) {
     char *newbuf = realloc(b->chars, b->len + slen);
-    if (newbuf == NULL) return;
+    if (!newbuf) return;
     memcpy(&(newbuf[b->len]), s, slen);
     b->chars = newbuf;
     b->len += slen;

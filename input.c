@@ -41,14 +41,24 @@ int readKey() {
 void deleteCharBeforeCursor() {
     if (E.cx == 0) {
         if (E.cy == 0) return;
+
         erow *row = &E.row[E.cy];
-        erow *prevRow = &E.row[E.cy-1];
-        prevRow->chars = realloc(prevRow->chars, prevRow->len + row->len + 1);
-        memmove(&prevRow->chars[prevRow->len], row->chars, (row->len+1));
-        prevRow->len += row->len;
-        E.cx = prevRow->len;
-        E.cy--;
+        erow *prev = &E.row[E.cy - 1];
+
+        prev->chars = realloc(prev->chars, prev->len + row->len + 1);
+        if (!prev->chars) return;
+        memcpy(prev->chars + prev->len, row->chars, row->len + 1);
+        prev->len += row->len;
+
+        free(row->chars);
+
+        memmove(&E.row[E.cy], &E.row[E.cy + 1],
+            sizeof(erow) * (E.numrows - E.cy - 1));
+
         E.numrows--;
+        E.cy--;
+        E.cx = prev->len;
+
         return;
     }
 
@@ -58,50 +68,44 @@ void deleteCharBeforeCursor() {
     row->len--;
 }
 
-// at - variable insert to what line (what index to be inserted in)
+// what index to be inserted in
 void insertRow(int at) {
-    if (at >= E.screenHeight) return; // Return for now (add later vertical scroll);
+    if (at < 0 || at > E.numrows) return;
 
-    if (E.row == NULL) {
-        E.row = malloc(sizeof(erow));
-        E.numrows = 1;
-        E.row->chars = NULL;
-        E.row->len=0;
+    E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
+    if (!E.row) return;
+
+    if (at < E.numrows) {
+        memmove(&E.row[at + 1], &E.row[at],
+                sizeof(erow) * (E.numrows - at));
     }
 
-    else if (at == E.numrows) {
-        erow *row = &E.row[E.cy];
-        char *newchars = strdup(row->chars + E.cx); // right part
-        row->chars[E.cx] = '\0';
-        row->len = E.cx;
+    E.row[at].len = 0;
+    E.row[at].chars = strdup("");
 
-        E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
-        E.row[at].chars = newchars;
-        E.row[at].len = strlen(newchars);
+    E.numrows++;
+}
 
-        E.cx = 0;
-        E.cy++;
-        E.numrows++;
-    }
+void splitRow(int y, int x) {
+    if (y < 0 || y >= E.numrows) return;
+    if (x < 0) x = 0;
+    erow *row = &E.row[y];
 
-    else {
-        if (at == 0) {
-            return;
-        }
+    if (x > row->len) x = row->len;
 
-        erow *row = &E.row[at-1];
-        char *newchars = strdup(row->chars + E.cx); // right part
-        row->chars[E.cx] = '\0';
-        row->len = E.cx;
+    char *right = strdup(row->chars + x);
+    if (!right) return;
 
-        E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
-        memmove(&E.row[at + 1], &E.row[at], sizeof(erow)*(E.numrows - at));
-        E.row[at].chars = newchars;
-        E.row[at].len = strlen(newchars);
-        E.cx = 0;
-        E.cy++;
-        E.numrows++;
-    }
+    row->chars[x] = '\0';
+    row->len = x;
+
+    insertRow(y + 1);
+
+    free(E.row[y + 1].chars);
+    E.row[y + 1].chars = right;
+    E.row[y + 1].len = strlen(right);
+    E.cy++;
+    E.cx = E.row[y+1].len;
 }
 
 void insertChar(int c) {
@@ -110,10 +114,12 @@ void insertChar(int c) {
     }
 
     erow* row = &E.row[E.cy];
+    if (E.cx < 0) E.cx = 0;
+    if (E.cx > row->len) E.cx = row->len;
     char ch = (char)c;
 
     char* newstr = realloc(row->chars, row->len + 2);
-    if (newstr == NULL) return;
+    if (!newstr) return;
     memmove(&newstr[E.cx+1], &newstr[E.cx], (row->len - E.cx + 1));
     
     newstr[E.cx] = ch;      // store character
@@ -128,18 +134,21 @@ void processKey(int c) {
         case CTRL_KEY('q'):
             write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+            free(E.row);
             exit(0);
             break;
         case '\n':
         case '\r':
-            insertRow(E.cy+1);
+            splitRow(E.cy, E.cx);
             break;
         case 127:
         case '\b':
+            if (E.numrows == 0) return;
             deleteCharBeforeCursor();
             break;
         
         case ARROW_LEFT:
+            if (E.numrows == 0) return;
             if (E.cx > 0) E.cx--;
             else if (E.cy > 0) { 
                 E.cy--;
@@ -147,6 +156,7 @@ void processKey(int c) {
             }
             break;
         case ARROW_RIGHT:
+            if (E.numrows == 0) return;
             if (E.cx < E.row[E.cy].len) E.cx++;
             else if (E.cy + 1 < E.numrows) {
                 E.cy++;
@@ -154,6 +164,7 @@ void processKey(int c) {
             }
             break;
         case ARROW_UP:
+            if (E.numrows == 0) return;
             if (E.cy > 0) {
                 E.cy--;
                 if (E.cx > E.row[E.cy].len) {
@@ -162,6 +173,7 @@ void processKey(int c) {
             }
             break;
         case ARROW_DOWN:
+            if (E.numrows == 0) return;
             if (E.cy + 1 < E.numrows) {
                 E.cy++;
                 if (E.cx > E.row[E.cy].len) {
