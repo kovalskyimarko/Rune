@@ -72,14 +72,24 @@ void bufferAppendRows(buffer *b) {
         bufferAppend(b, "\r\n", 2);
     }
 
-    if (E.numrows != 0) {
-        snprintf(buf, sizeof(buf), "Ln %d, col %d   %s", E.cy+1, E.cx+1, E.filename);
-        bufferAppend(b, buf, strlen(buf));
+    bufferAppend(b, "\x1b[7m", 4);
+
+    char status[80];
+    int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
+        E.filename ? E.filename : "[No Name]", 
+        E.numrows, 
+        E.cy + 1, 
+        E.cx + 1);
+
+    if (len > E.screenWidth) len = E.screenWidth;
+    bufferAppend(b, status, len);
+
+    while (len < E.screenWidth) {
+        bufferAppend(b, " ", 1);
+        len++;
     }
 
-    else {
-        bufferAppend(b, "~", 1);
-    }
+    bufferAppend(b, "\x1b[m", 3);
 }
 
 void refreshScreen() {

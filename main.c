@@ -17,7 +17,7 @@ void init() {
     E.row = NULL;
     E.coloff = 0;
     E.rowoff = 0;
-    E.filename = "";
+    E.filename = NULL;
     getWindowSize(&E.screenHeight, &E.screenWidth);
     E.screenHeight-=1; // For the status bar
 }
