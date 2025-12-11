@@ -5,11 +5,19 @@ void disableRawMode() {
 }
 
 void enableAltBuff() {
-    write(STDIN_FILENO, ENTER_ALT_BUFF, ENTER_ALT_BUFF_B);
+    write(STDOUT_FILENO, ENTER_ALT_BUFF, ENTER_ALT_BUFF_B);
+}
+
+void enableMouseTracking() {
+    write(STDOUT_FILENO, ENABLE_MOUSE, ENABLE_MOUSE_B);
 }
 
 void disableAltBuff() {
-    write(STDIN_FILENO, LEAVE_ALT_BUFF, LEAVE_ALT_BUFF_B);
+    write(STDOUT_FILENO, LEAVE_ALT_BUFF, LEAVE_ALT_BUFF_B);
+}
+
+void disableMouseTracking() {
+    write(STDOUT_FILENO, DISABLE_MOUSE, DISABLE_MOUSE_B);
 }
 
 void enableRawMode() {

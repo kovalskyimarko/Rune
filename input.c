@@ -177,6 +177,7 @@ void processKey(int c) {
             write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
             free(E.row);
+            disableMouseTracking();
             disableAltBuff();
             exit(0);
             break;

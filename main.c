@@ -16,12 +16,16 @@ void init() {
     E.numrows = 0;
     E.row = NULL;
     E.coloff = 0;
+    E.rowoff = 0;
+    E.filename = "";
     getWindowSize(&E.screenHeight, &E.screenWidth);
+    E.screenHeight-=1; // For the status bar
 }
 
 int main() {
     init();
     enableAltBuff();
+    enableMouseTracking();
     enableRawMode();
 
     while (1) {

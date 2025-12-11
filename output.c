@@ -24,6 +24,14 @@ void appendCentered(buffer *b, const char *s) {
 }
 
 void bufferAppendRows(buffer *b) {
+    if (E.cy < E.rowoff) {
+        E.rowoff = E.cy;
+    }
+
+    if (E.cy >= E.rowoff + E.screenHeight) {
+        E.rowoff = E.cy - E.screenHeight + 1;
+    }
+
     if (E.cx < E.coloff) {
         E.coloff = E.cx;
     }
@@ -32,13 +40,13 @@ void bufferAppendRows(buffer *b) {
        E.coloff = E.cx - E.screenWidth + 1;
     }
 
-    char buf[64];
-    for (int i = 0; i < E.screenHeight; i++) {
+    char buf[128];
+    for (int i = E.rowoff; i < E.screenHeight+E.rowoff; i++) {
         if (E.numrows > i) {
             erow *row = &E.row[i];
             int len = row->len;
 
-            if (E.coloff < len) {
+            if (E.coloff < len && E.rowoff < E.numrows) {
                 int visible = len - E.coloff;
                 if (visible > E.screenWidth) visible = E.screenWidth;
 
@@ -59,9 +67,18 @@ void bufferAppendRows(buffer *b) {
                 bufferAppend(b, "~", 1);
             }
         }
-        if (i != E.screenHeight -1) {
-            bufferAppend(b, "\r\n", 2);
-        }
+
+        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+        bufferAppend(b, "\r\n", 2);
+    }
+
+    if (E.numrows != 0) {
+        snprintf(buf, sizeof(buf), "Ln %d, col %d   %s", E.cy+1, E.cx+1, E.filename);
+        bufferAppend(b, buf, strlen(buf));
+    }
+
+    else {
+        bufferAppend(b, "~", 1);
     }
 }
 
@@ -69,17 +86,13 @@ void refreshScreen() {
     buffer b = BUFFER_INIT;
 
     bufferAppend(&b, HIDE_CURSOR, HIDE_CURSOR_B);
-    bufferAppend(&b, CLEAR_SCREEN, CLEAR_SCREEN_B);
     bufferAppend(&b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
     bufferAppendRows(&b);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx - E.coloff + 1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy - E.rowoff + 1, E.cx - E.coloff + 1);
     bufferAppend(&b, buf, strlen(buf));
     bufferAppend(&b, SHOW_CURSOR, SHOW_CURSOR_B);
-    //char bufT[32];
-    //snprintf(bufT, sizeof(bufT), "%d", E.cx);
-    //bufferAppend(&b, bufT, 1);
     write(STDOUT_FILENO, b.chars, b.len);
 
     free(b.chars);
