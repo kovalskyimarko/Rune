@@ -20,6 +20,10 @@
 #define HIDE_CURSOR_B sizeof(HIDE_CURSOR) - 1
 #define SHOW_CURSOR "\033[?25h"
 #define SHOW_CURSOR_B sizeof(SHOW_CURSOR) - 1
+#define ENTER_ALT_BUFF "\x1b[?1049h"
+#define ENTER_ALT_BUFF_B sizeof(ENTER_ALT_BUFF) - 1
+#define LEAVE_ALT_BUFF "\x1b[?1049l"
+#define LEAVE_ALT_BUFF_B sizeof(LEAVE_ALT_BUFF) - 1
 
 enum SPECIAL_KEYS {
     ARROW_UP = 1000,
@@ -54,6 +58,8 @@ extern struct editorConfig E;
 void refreshScreen(void); 
 // terminal.c
 void disableRawMode(void);
+void enableAltBuff(void);
+void disableAltBuff(void);
 void enableRawMode(void);
 void getWindowSize(int *rows, int *cols);
 

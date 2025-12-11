@@ -177,16 +177,25 @@ void processKey(int c) {
             write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
             free(E.row);
+            disableAltBuff();
             exit(0);
             break;
+
         case '\n':
         case '\r':
             splitRow(E.cy, E.cx);
             break;
+
         case 127:
         case '\b':
             if (E.numrows == 0) return;
             deleteCharBeforeCursor();
+            break;
+        
+        case '\t':
+            for (int i = 0; i < 4; i++) {
+                insertChar(32);
+            }
             break;
             
         case DEL_KEY:
@@ -202,6 +211,7 @@ void processKey(int c) {
                 E.cx = E.row[E.cy].len;
             }
             break;
+
         case ARROW_RIGHT:
             if (E.numrows == 0) return;
             if (E.cx < E.row[E.cy].len) E.cx++;
@@ -210,6 +220,7 @@ void processKey(int c) {
                 E.cx = 0;
             }
             break;
+
         case ARROW_UP:
             if (E.numrows == 0) return;
             if (E.cy > 0) {
@@ -219,6 +230,7 @@ void processKey(int c) {
                 }            
             }
             break;
+
         case ARROW_DOWN:
             if (E.numrows == 0) return;
             if (E.cy + 1 < E.numrows) {
@@ -228,14 +240,17 @@ void processKey(int c) {
                 }
             }
             break;
+
         case HOME_KEY:
             if (E.numrows == 0) return;
             E.cx = 0;
             break;
+
         case END_KEY:
             if (E.numrows == 0) return;
             E.cx = E.row[E.cy].len;
             break;
+
         case PAGE_UP:
             if (E.numrows == 0) return;
             E.cy = 0;
@@ -243,6 +258,7 @@ void processKey(int c) {
                 E.cx = E.row[E.cy].len;
             }
             break;
+
         case PAGE_DOWN:
             if (E.numrows == 0) return;
             E.cy = E.numrows-1;
@@ -250,8 +266,10 @@ void processKey(int c) {
                 E.cx = E.row[E.cy].len;
             }
             break;
+
         case '\x1b':
             break;
+
         default:
             insertChar(c);
             break;

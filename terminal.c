@@ -4,6 +4,14 @@ void disableRawMode() {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.originalTermSettings);
 }
 
+void enableAltBuff() {
+    write(STDIN_FILENO, ENTER_ALT_BUFF, ENTER_ALT_BUFF_B);
+}
+
+void disableAltBuff() {
+    write(STDIN_FILENO, LEAVE_ALT_BUFF, LEAVE_ALT_BUFF_B);
+}
+
 void enableRawMode() {
     if (tcgetattr(STDIN_FILENO, &E.originalTermSettings) == -1) {
         error("tcgetattr");

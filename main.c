@@ -21,6 +21,7 @@ void init() {
 
 int main() {
     init();
+    enableAltBuff();
     enableRawMode();
 
     while (1) {
