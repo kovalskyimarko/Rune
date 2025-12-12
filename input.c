@@ -254,7 +254,12 @@ void processKey(int c) {
 
         case PAGE_UP:
             if (E.numrows == 0) return;
-            E.cy = 0;
+            E.cy = E.cy - E.screenHeight + 1;
+
+            if (E.cy < 0) {
+                E.cy = 0;
+            }
+
             if (E.cx > E.row[E.cy].len) {
                 E.cx = E.row[E.cy].len;
             }
@@ -262,7 +267,12 @@ void processKey(int c) {
 
         case PAGE_DOWN:
             if (E.numrows == 0) return;
-            E.cy = E.numrows-1;
+            E.cy = E.cy + E.screenHeight - 1;
+            
+            if (E.cy > E.numrows-1) {
+                E.cy = E.numrows-1;
+            }
+
             if (E.cx > E.row[E.cy].len) {
                 E.cx = E.row[E.cy].len;
             }
