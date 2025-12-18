@@ -10,7 +10,7 @@ void error(const char* eMessage) {
     exit(1);
 }
 
-void init() {
+void init(void) {
     E.cx = 0;
     E.cy = 0;
     E.numrows = 0;
@@ -18,14 +18,17 @@ void init() {
     E.coloff = 0;
     E.rowoff = 0;
     E.filename = NULL;
+    E.insertMode = true;
     getWindowSize(&E.screenHeight, &E.screenWidth);
     E.screenHeight-=1; // For the status bar
+    E.lastrow = malloc(sizeof(erow));
+    E.lastrow->chars = malloc(E.screenWidth);
+    E.lastrow->len = 0;
 }
 
-int main() {
+int main(void) {
     init();
     enableAltBuff();
-    enableMouseTracking();
     enableRawMode();
 
     while (1) {

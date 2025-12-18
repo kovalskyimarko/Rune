@@ -8,6 +8,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define EDITOR_VERSION "0.0.1"
@@ -26,10 +27,7 @@
 #define ENTER_ALT_BUFF_B sizeof(ENTER_ALT_BUFF) - 1
 #define LEAVE_ALT_BUFF "\x1b[?1049l"
 #define LEAVE_ALT_BUFF_B sizeof(LEAVE_ALT_BUFF) - 1
-#define ENABLE_MOUSE "\x1b[?1000h"
-#define ENABLE_MOUSE_B sizeof(ENABLE_MOUSE) - 1
-#define DISABLE_MOUSE "\x1b[?1000l"
-#define DISABLE_MOUSE_B sizeof(DISABLE_MOUSE) - 1
+
 
 enum SPECIAL_KEYS {
     ARROW_UP = 1000,
@@ -51,14 +49,19 @@ typedef struct erow {
 struct editorConfig {
     struct termios originalTermSettings;
     int cx; /* Cursor x position*/
-    int cy; /* Cursor y position (0 to Screen Height -1)*/
+    int cy; /* Cursor y position*/
+    int lastcy;
+    int lastcx;
     int screenWidth;
     int screenHeight;
     int numrows;
     int coloff; /* From what position start rendering the columns*/
     int rowoff; /* From what position start rendering the rows*/
-    char* filename;
+    char *filepath;
+    char *filename;
+    bool insertMode;
     erow* row;  /* Pointer to current row*/
+    erow* lastrow;
 };
 
 extern struct editorConfig E;
@@ -67,15 +70,18 @@ void refreshScreen(void);
 // terminal.c
 void disableRawMode(void);
 void enableAltBuff(void);
-void enableMouseTracking(void);
 void disableAltBuff(void);
-void disableMouseTracking(void);
 void enableRawMode(void);
 void getWindowSize(int *rows, int *cols);
 
 // input.c
 int readKey(void);
 void processKey(int c);
+void insertRowWithText(int at, const char *s, size_t len);
+
+// file.c
+void savefile(void);
+void openfile(void);
 
 // main.c
 void init(void);

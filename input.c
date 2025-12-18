@@ -58,7 +58,46 @@ int readKey() {
     return c;
 }
 
+void parseCommand(const char *cmd) {
+    while (*cmd == ' ') cmd++;   // skip leading spaces
+
+    /* Write */
+    if (strncmp(cmd, ":w", 2) == 0 &&
+        (cmd[2] == '\0' || cmd[2] == ' ')) {
+
+        /* optional filename after :w */
+        if (cmd[2] == ' ') {
+            free(E.filepath);
+            E.filepath = NULL;
+            free(E.filename);
+            E.filename = NULL;
+
+            E.lastrow->chars = (char *)cmd; // reuse input
+        }
+
+        savefile();
+        return;
+    }
+
+    /* Edit / open */
+    if (strncmp(cmd, ":e", 2) == 0 &&
+        (cmd[2] == '\0' || cmd[2] == ' ')) {
+
+        openfile();
+        return;
+    }
+}
+
+
 void deleteCharBeforeCursor() {
+    if (!E.insertMode) {
+        if (E.cx == 0) return;
+        memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
+        E.cx--;
+        E.lastrow->len--;
+        return;
+    }
+
     if (E.cx == 0) {
         if (E.cy == 0) return;
 
@@ -89,6 +128,13 @@ void deleteCharBeforeCursor() {
 }
 
 void deleteCharAtCursor() {
+    if (!E.insertMode) {
+        if (E.cx == E.lastrow->len) return;
+        memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);
+        E.lastrow->len--;
+        return;
+    }
+
     erow *row = &E.row[E.cy];
 
     if (E.cx < 0 || E.cx > row->len) return;
@@ -150,7 +196,38 @@ void splitRow(int y, int x) {
     E.cx = 0;
 }
 
+void insertRowWithText(int at, const char *s, size_t len) {
+    if (at < 0 || at > E.numrows) return;
+
+    insertRow(at);
+
+    erow *row = &E.row[at];
+    free(row->chars);
+
+    row->chars = malloc(len + 1);
+    if (!row->chars) return;
+
+    memcpy(row->chars, s, len);
+    row->chars[len] = '\0';
+    row->len = len;
+}
+
+
 void insertChar(int c) {
+    if (!E.insertMode) {
+        char ch = (char) c;
+        char* newstr = realloc(E.lastrow->chars, E.lastrow->len + 2);
+        if (!newstr) return;
+        memmove(&newstr[E.cx+1], &newstr[E.cx], (E.lastrow->len - E.cx + 1));
+    
+        newstr[E.cx] = ch;      // store character
+    
+        E.lastrow->chars = newstr;
+        E.lastrow->len++;
+        E.cx++;
+        return;
+    }
+
     if (E.numrows == 0) {
         insertRow(0);
     }
@@ -171,25 +248,40 @@ void insertChar(int c) {
     E.cx++;
 }
 
+void sendCommand(void) {
+    parseCommand(E.lastrow->chars);
+
+    free(E.lastrow->chars);
+    E.lastrow->chars = strdup("");
+    E.lastrow->len = 0;
+
+    E.insertMode = true;
+    E.cx = E.lastcx;
+    E.cy = E.lastcy;
+}
+
 void processKey(int c) {
     switch (c){
         case CTRL_KEY('q'):
             write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
             free(E.row);
-            disableMouseTracking();
             disableAltBuff();
             exit(0);
             break;
 
         case '\n':
         case '\r':
+            if (!E.insertMode) {
+                sendCommand();
+                break;
+            }
             splitRow(E.cy, E.cx);
             break;
 
         case 127:
         case '\b':
-            if (E.numrows == 0) return;
+            if (E.numrows == 0 && E.insertMode) return;
             deleteCharBeforeCursor();
             break;
         
@@ -200,11 +292,15 @@ void processKey(int c) {
             break;
             
         case DEL_KEY:
-            if (E.numrows == 0) return;
+            if (E.numrows == 0 && E.insertMode) return;
             deleteCharAtCursor();
             break;
         
         case ARROW_LEFT:
+            if (!E.insertMode) {
+                if (E.cx > 0) E.cx--;
+                break;
+            }
             if (E.numrows == 0) return;
             if (E.cx > 0) E.cx--;
             else if (E.cy > 0) { 
@@ -214,6 +310,10 @@ void processKey(int c) {
             break;
 
         case ARROW_RIGHT:
+            if (!E.insertMode) {
+                if (E.cx < E.lastrow->len) E.cx++;
+                break;
+            }
             if (E.numrows == 0) return;
             if (E.cx < E.row[E.cy].len) E.cx++;
             else if (E.cy + 1 < E.numrows) {
@@ -243,11 +343,19 @@ void processKey(int c) {
             break;
 
         case HOME_KEY:
+            if (!E.insertMode) {
+                 E.cx=0; 
+                 break;
+            }
             if (E.numrows == 0) return;
             E.cx = 0;
             break;
 
         case END_KEY:
+            if (!E.insertMode) {
+                E.cx=E.lastrow->len; 
+                break;
+            }
             if (E.numrows == 0) return;
             E.cx = E.row[E.cy].len;
             break;
@@ -279,6 +387,20 @@ void processKey(int c) {
             break;
 
         case '\x1b':
+            if (E.insertMode == true) { 
+                E.insertMode = false;
+                E.lastcx = E.cx;
+                E.lastcy = E.cy;
+                E.cy = E.screenHeight + E.rowoff;
+                E.cx = 0;
+            }
+            
+            else {
+                E.lastrow = malloc(E.screenWidth);
+                E.insertMode = true;
+                E.cx = E.lastcx;
+                E.cy = E.lastcy;
+            }
             break;
 
         default:

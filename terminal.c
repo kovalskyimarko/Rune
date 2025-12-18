@@ -1,26 +1,18 @@
 #include "rune.h"
 
-void disableRawMode() {
+void disableRawMode(void) {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.originalTermSettings);
 }
 
-void enableAltBuff() {
+void enableAltBuff(void) {
     write(STDOUT_FILENO, ENTER_ALT_BUFF, ENTER_ALT_BUFF_B);
 }
 
-void enableMouseTracking() {
-    write(STDOUT_FILENO, ENABLE_MOUSE, ENABLE_MOUSE_B);
-}
-
-void disableAltBuff() {
+void disableAltBuff(void) {
     write(STDOUT_FILENO, LEAVE_ALT_BUFF, LEAVE_ALT_BUFF_B);
 }
 
-void disableMouseTracking() {
-    write(STDOUT_FILENO, DISABLE_MOUSE, DISABLE_MOUSE_B);
-}
-
-void enableRawMode() {
+void enableRawMode(void) {
     if (tcgetattr(STDIN_FILENO, &E.originalTermSettings) == -1) {
         error("tcgetattr");
     }

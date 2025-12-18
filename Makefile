@@ -1,11 +1,11 @@
 # Compiler
-CC = gcc-15
+CC = gcc
 
 # Compiler flags
 CFLAGS = -Wall -Wextra -pedantic -std=c11 -O2
 
 # Source files
-SRCS = main.c terminal.c input.c output.c
+SRCS = main.c terminal.c input.c output.c file.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)

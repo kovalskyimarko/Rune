@@ -24,11 +24,11 @@ void appendCentered(buffer *b, const char *s) {
 }
 
 void bufferAppendRows(buffer *b) {
-    if (E.cy < E.rowoff) {
+    if (E.cy < E.rowoff && E.insertMode) {
         E.rowoff = E.cy;
     }
 
-    if (E.cy >= E.rowoff + E.screenHeight) {
+    if (E.cy >= E.rowoff + E.screenHeight && E.insertMode) {
         E.rowoff = E.cy - E.screenHeight + 1;
     }
 
@@ -72,24 +72,31 @@ void bufferAppendRows(buffer *b) {
         bufferAppend(b, "\r\n", 2);
     }
 
-    bufferAppend(b, "\x1b[7m", 4);
+    
+    if (E.insertMode) {
+        bufferAppend(b, "\x1b[7m", 4);    
+        char status[80];
+        int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
+            E.filename ? E.filename : "[No Name]", 
+            E.numrows, 
+            E.cy + 1, 
+            E.cx + 1);
 
-    char status[80];
-    int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
-        E.filename ? E.filename : "[No Name]", 
-        E.numrows, 
-        E.cy + 1, 
-        E.cx + 1);
+        if (len > E.screenWidth) len = E.screenWidth;
+        bufferAppend(b, status, len);
 
-    if (len > E.screenWidth) len = E.screenWidth;
-    bufferAppend(b, status, len);
+        while (len < E.screenWidth) {
+            bufferAppend(b, " ", 1);
+            len++;
+        }
 
-    while (len < E.screenWidth) {
-        bufferAppend(b, " ", 1);
-        len++;
+        bufferAppend(b, "\x1b[m", 3);
     }
 
-    bufferAppend(b, "\x1b[m", 3);
+    else {
+        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+        bufferAppend(b, E.lastrow->chars, E.lastrow->len);
+    }
 }
 
 void refreshScreen() {
