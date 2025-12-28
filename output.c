@@ -99,7 +99,7 @@ void bufferAppendRows(buffer *b) {
     }
 }
 
-void refreshScreen() {
+void refreshScreen(void) {
     buffer b = BUFFER_INIT;
 
     bufferAppend(&b, HIDE_CURSOR, HIDE_CURSOR_B);

@@ -1,6 +1,6 @@
 #include "rune.h"
 
-int readKey() {
+int readKey(void) {
     char c;
     int n;
 
@@ -89,7 +89,7 @@ void parseCommand(const char *cmd) {
 }
 
 
-void deleteCharBeforeCursor() {
+void deleteCharBeforeCursor(void) {
     if (!E.insertMode) {
         if (E.cx == 0) return;
         memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
@@ -127,7 +127,7 @@ void deleteCharBeforeCursor() {
     row->len--;
 }
 
-void deleteCharAtCursor() {
+void deleteCharAtCursor(void) {
     if (!E.insertMode) {
         if (E.cx == E.lastrow->len) return;
         memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);

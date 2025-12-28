@@ -21,38 +21,20 @@ void enableRawMode(void) {
 
     struct termios raw = E.originalTermSettings;
 
-    /*
-      Local flags - Turn off echoing, canonical mode, signals, extended functions
-      Echo - terminal will not print input characters
-      ICANON - disable canonical mode (read byte-by-byte)
-      ISIG - disable signal chars (Ctrl-C, Ctrl-Z)
-      IEXTEN - disable extended functions
-    */
+    /* Local modes: echoing off, canonical off, no extended functions, no signal chars (^Z, ^C) */
     raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 
-    /*
-      Input flags - Turn off software flow control, CR to NL mapping, parity checking, stripping, and more
-      IXON - disable Ctrl-S and Ctrl-Q
-      ICRNL - disable CR to NL mapping
-      BRKINT, INPCK, ISTRIP - disable various input processing
-    */
+    /* Input modes: no break, no CR to NL, no parity check, no strip char, no flow control */
     raw.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
 
-    /*
-      Output flags - Turn off post-processing of output
-      OPOST - disable all output processing
-    */
+    /* Output modes: disable post processing */
     raw.c_oflag &= ~(OPOST);
 
-    /* Control flags - Set character size to 8 bits per byte */
+    /* Control modes: set 8 bit chars */
     raw.c_cflag &= ~CSIZE; 
     raw.c_cflag |= (CS8);
 
-    /*
-      Control characters - Set read timeout
-      VMIN = 0: return as soon as there is any data
-      VTIME = 1: wait for 100 ms before returning 
-    */
+    /* Control chars: set return condition min bytes and timeout (100 ms) */
     raw.c_cc[VMIN] = 0;
     raw.c_cc[VTIME] = 1;
 
