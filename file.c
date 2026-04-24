@@ -5,15 +5,19 @@ const char *path_basename(const char *path) {
     return slash ? slash + 1 : path;
 }
 
-int expand_path(char *dest, size_t dest_len, const char *input) {
+char* expand_path(const char *input) {
     if (input[0] == '~') {
         const char *home = getenv("HOME");
-        if (!home) return 0;
-        snprintf(dest, dest_len, "%s%s", home, input + 1);
-    } else {
-        snprintf(dest, dest_len, "%s", input);
+        if (!home) return strdup(input);
+
+        size_t len = strlen(home) + strlen(input + 1) + 1;
+        char *dest = malloc(len);    
+        if (dest) {
+            snprintf(dest, len, "%s%s", home, input + 1);
+        }
+        return dest;
     }
-    return 1;
+    return strdup(input);
 }
 
 void editor_set_filename(const char *path) {
@@ -36,26 +40,26 @@ void editor_clear_buffer(void) {
 }
 
 void savefile(void) {
-    char fullpath[1024];
-    const char *target_path = NULL;
+    char *target_path = NULL;
 
     if (E.lastrow && E.lastrow->len > 3) {
-        if (!expand_path(fullpath, sizeof(fullpath), &E.lastrow->chars[3])) 
-            return;
+        target_path = expand_path(&E.lastrow->chars[3]);
+        if (!target_path) return;
         
-        target_path = fullpath;
         
-        editor_set_filename(fullpath);
-        if (!E.filepath) return;
+        editor_set_filename(target_path);
     } 
     
     else {
         if (!E.filepath) return;
-        target_path = E.filepath;
+        target_path = strdup(E.filepath);
     }
 
     FILE *fptr = fopen(target_path, "w");
-    if (!fptr) return;
+    if (!fptr) { 
+        free(target_path);
+        return;
+    }
 
     for (int i = 0; i < E.numrows; i++) {
         fputs(E.row[i].chars, fptr);
@@ -63,25 +67,27 @@ void savefile(void) {
     }
 
     fclose(fptr);
+    free(target_path);
 }
 
 void openfile(void) {
-    char fullpath[1024];
+    if (!E.lastrow || E.lastrow->len <= 3) return;
 
-    if (!E.lastrow || E.lastrow->len <= 3)
-        return;
-
-    if (!expand_path(fullpath, sizeof(fullpath), &E.lastrow->chars[3]))
-        return;
+    char *fullpath = expand_path(&E.lastrow->chars[3]);
+    if (!fullpath) return;
 
     FILE *fp = fopen(fullpath, "r");
-    if (!fp) return;
+    if (!fp) {
+        free(fullpath);
+        return;
+    }
 
     editor_clear_buffer();
 
     editor_set_filename(fullpath);
     if (!E.filepath || !E.filename) {
         fclose(fp);
+        free(fullpath);
         return;
     }
 
@@ -98,4 +104,5 @@ void openfile(void) {
 
     free(line);
     fclose(fp);
+    free(fullpath);
 }
