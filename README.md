@@ -20,6 +20,16 @@ This project is a personal learning endeavor to understand low-level text editin
 
 ---
 
+## Technical Highlights & Memory Safety
+
+Building a text editor from scratch in C presents unique challenges, particularly regarding terminal interfaces and memory management. 
+
+* **Raw Terminal Control:** Bypasses standard I/O (canonical mode) using `termios.h` and `ioctl` to manually handle VT100 escape sequences, enabling instant keystroke processing and screen rendering.
+* **Zero-Leak Memory Management:** Implements dynamic memory allocation for row buffers (`erow`) and file paths. Uses safe `realloc` patterns (temporary pointers) to prevent heap corruption and ensures complete memory freeing upon exit (`valgrind` clean).
+* **Dynamic Path Expansion:** Safely handles `~` tilde expansion by dynamically calculating and allocating path lengths on the heap, preventing buffer overflow vulnerabilities common in fixed-size `char[]` buffers.
+
+---
+
 ## Features in Progress / TODO
 
 * Copy (`Ctrl+C`) and paste (`Ctrl+V`)

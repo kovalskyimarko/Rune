@@ -4,6 +4,10 @@ CC = gcc
 # Compiler flags
 CFLAGS = -Wall -Wextra -pedantic -std=c11 -O2
 
+# Run with memory checks
+debug: CFLAGS += -g
+debug: rebuild
+
 # Source files
 SRCS = main.c terminal.c input.c output.c file.c
 
