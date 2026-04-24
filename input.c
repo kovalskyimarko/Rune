@@ -71,8 +71,6 @@ void parseCommand(const char *cmd) {
             E.filepath = NULL;
             free(E.filename);
             E.filename = NULL;
-
-            E.lastrow->chars = (char *)cmd; // reuse input
         }
 
         savefile();
@@ -104,8 +102,9 @@ void deleteCharBeforeCursor(void) {
         erow *row = &E.row[E.cy];
         erow *prev = &E.row[E.cy - 1];
 
-        prev->chars = realloc(prev->chars, prev->len + row->len + 1);
-        if (!prev->chars) return;
+        char *tmp = realloc(prev->chars, prev->len + row->len + 1);
+        if (!tmp) return;
+        prev->chars = tmp;
         memcpy(prev->chars + prev->len, row->chars, row->len + 1);
         E.cx = prev->len;
         prev->len += row->len;
@@ -142,7 +141,9 @@ void deleteCharAtCursor(void) {
         if (E.cy + 1 == E.numrows) return;    
         
         erow *nextRow = &E.row[E.cy+1];
-        row->chars = realloc(row->chars, row->len + nextRow->len + 1);
+        char *tmp = realloc(row->chars, row->len + nextRow->len + 1);
+        if (!tmp) return;
+        row->chars = tmp;
         memcpy(row->chars + row-> len, nextRow -> chars, nextRow -> len + 1);
         row->len += nextRow->len;
         free(nextRow->chars); 
@@ -160,8 +161,9 @@ void deleteCharAtCursor(void) {
 void insertRow(int at) {
     if (at < 0 || at > E.numrows) return;
 
-    E.row = realloc(E.row, sizeof(erow) * (E.numrows + 1));
-    if (!E.row) return;
+    erow *tmp = realloc(E.row, sizeof(erow) * (E.numrows + 1));
+    if (!tmp) return;
+    E.row = tmp;
 
     if (at < E.numrows) {
         memmove(&E.row[at + 1], &E.row[at],
@@ -396,7 +398,10 @@ void processKey(int c) {
             }
             
             else {
-                E.lastrow = malloc(E.screenWidth);
+                free(E.lastrow->chars);
+                E.lastrow->chars = strdup("");
+                E.lastrow->len = 0;
+
                 E.insertMode = true;
                 E.cx = E.lastcx;
                 E.cy = E.lastcy;
