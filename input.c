@@ -265,7 +265,7 @@ void processKey(int c) {
         case CTRL_KEY('q'):
             write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
             write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
-            free(E.row);
+            cleanup();
             disableAltBuff();
             exit(0);
             break;

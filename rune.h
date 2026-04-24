@@ -86,5 +86,6 @@ void openfile(void);
 // main.c
 void init(void);
 void error(const char* eMessage);
+void cleanup(void);
 
 #endif

@@ -26,6 +26,27 @@ void init(void) {
     E.lastrow->len = 0;
 }
 
+void cleanup(void) {
+    if (E.row) {
+        for (int i = 0; i < E.numrows; i++) {
+            if (E.row[i].chars) {
+                free(E.row[i].chars);
+            }
+        }
+        free(E.row);
+    }
+
+    if (E.lastrow) {
+        if (E.lastrow->chars) {
+            free(E.lastrow->chars);
+        }
+        free(E.lastrow);
+    }
+
+    if (E.filepath) free(E.filepath);
+    if (E.filename) free(E.filename);
+}
+
 int main(void) {
     init();
     enableAltBuff();
