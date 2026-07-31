@@ -1,11 +1,11 @@
 #include "rune.h"
 
-const char *path_basename(const char *path) {
+const char *getPathBasename(const char *path) {
     const char *slash = strrchr(path, '/');
     return slash ? slash + 1 : path;
 }
 
-char* expand_path(const char *input) {
+char* expandPath(const char *input) {
     if (input[0] == '~') {
         const char *home = getenv("HOME");
         if (!home) return strdup(input);
@@ -20,15 +20,15 @@ char* expand_path(const char *input) {
     return strdup(input);
 }
 
-void editor_set_filename(const char *path) {
+void editorSetFilename(const char *path) {
     if (E.filepath) free(E.filepath);
     if (E.filename) free(E.filename);
 
     E.filepath = strdup(path);
-    E.filename = strdup(path_basename(path));
+    E.filename = strdup(getPathBasename(path));
 }
 
-void editor_clear_buffer(void) {
+void editorClearBuffer(void) {
     for (int i = 0; i < E.numrows; i++) {
         free(E.row[i].chars);
     }
@@ -43,11 +43,12 @@ void savefile(void) {
     char *target_path = NULL;
 
     if (E.lastrow && E.lastrow->len > 3) {
-        target_path = expand_path(&E.lastrow->chars[3]);
+        target_path = expandPath
+    (&E.lastrow->chars[3]);
         if (!target_path) return;
         
         
-        editor_set_filename(target_path);
+        editorSetFilename(target_path);
     } 
     
     else {
@@ -73,7 +74,7 @@ void savefile(void) {
 void openfile(void) {
     if (!E.lastrow || E.lastrow->len <= 3) return;
 
-    char *fullpath = expand_path(&E.lastrow->chars[3]);
+    char *fullpath = expandPath(&E.lastrow->chars[3]);
     if (!fullpath) return;
 
     FILE *fp = fopen(fullpath, "r");
@@ -82,9 +83,9 @@ void openfile(void) {
         return;
     }
 
-    editor_clear_buffer();
+    editorClearBuffer();
 
-    editor_set_filename(fullpath);
+    editorSetFilename(fullpath);
     if (!E.filepath || !E.filename) {
         fclose(fp);
         free(fullpath);

@@ -23,13 +23,11 @@ void appendCentered(buffer *b, const char *s) {
     bufferAppend(b, s, slen);
 }
 
-void bufferAppendRows(buffer *b) {
-    if (E.cy < E.rowoff && E.insertMode) {
-        E.rowoff = E.cy;
-    }
-
-    if (E.cy >= E.rowoff + E.screenHeight && E.insertMode) {
-        E.rowoff = E.cy - E.screenHeight + 1;
+void scroll(void)
+{
+    if (!E.insertMode)
+    {
+        return;
     }
 
     if (E.cx < E.coloff) {
@@ -38,6 +36,37 @@ void bufferAppendRows(buffer *b) {
 
     if (E.cx >= E.coloff + E.screenWidth) {
        E.coloff = E.cx - E.screenWidth + 1;
+    }
+
+    if (E.cy < E.rowoff && E.insertMode) {
+        E.rowoff = E.cy;
+    }
+
+    if (E.cy >= E.rowoff + E.screenHeight && E.insertMode) {
+        E.rowoff = E.cy - E.screenHeight + 1;
+    }
+}
+
+void scrollAtCommandLine(void)
+{
+    if (E.cx < E.commandlineColloff) {
+        E.commandlineColloff = E.cx;
+    }
+
+    if (E.cx >= E.commandlineColloff + E.screenWidth) {
+       E.commandlineColloff = E.cx - E.screenWidth + 1;
+    }
+}
+
+void bufferAppendRows(buffer *b) {
+    if (E.insertMode)
+    {
+        scroll();
+    }
+
+    else
+    {
+        scrollAtCommandLine();
     }
 
     char buf[128];
@@ -80,7 +109,8 @@ void bufferAppendRows(buffer *b) {
             E.filename ? E.filename : "[No Name]", 
             E.numrows, 
             E.cy + 1, 
-            E.cx + 1);
+            E.cx + 1
+        );
 
         if (len > E.screenWidth) len = E.screenWidth;
         bufferAppend(b, status, len);
@@ -95,7 +125,12 @@ void bufferAppendRows(buffer *b) {
 
     else {
         bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
-        bufferAppend(b, E.lastrow->chars, E.lastrow->len);
+        int cmd_len = E.lastrow->len - E.commandlineColloff;
+
+        if (cmd_len > E.screenWidth)
+            cmd_len = E.screenWidth;
+
+        bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
     }
 }
 
@@ -107,7 +142,23 @@ void refreshScreen(void) {
     bufferAppendRows(&b);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy - E.rowoff + 1, E.cx - E.coloff + 1);
+
+    int posY;
+    int posX;
+
+    if (E.insertMode)
+    {
+        posY = E.cy - E.rowoff + 1;
+        posX = E.cx - E.coloff + 1;
+    }
+
+    else
+    {
+        posY = E.cy + 1;
+        posX = E.cx - E.commandlineColloff + 1;
+    }
+
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", posY, posX);
     bufferAppend(&b, buf, strlen(buf));
     bufferAppend(&b, SHOW_CURSOR, SHOW_CURSOR_B);
     write(STDOUT_FILENO, b.chars, b.len);

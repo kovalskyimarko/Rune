@@ -57,6 +57,7 @@ struct editorConfig {
     int numrows;
     int coloff; /* From what position start rendering the columns*/
     int rowoff; /* From what position start rendering the rows*/
+    int commandlineColloff;
     char *filepath;
     char *filename;
     bool insertMode;

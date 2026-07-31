@@ -86,16 +86,7 @@ void parseCommand(const char *cmd) {
     }
 }
 
-
 void deleteCharBeforeCursor(void) {
-    if (!E.insertMode) {
-        if (E.cx == 0) return;
-        memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
-        E.cx--;
-        E.lastrow->len--;
-        return;
-    }
-
     if (E.cx == 0) {
         if (E.cy == 0) return;
 
@@ -126,14 +117,17 @@ void deleteCharBeforeCursor(void) {
     row->len--;
 }
 
-void deleteCharAtCursor(void) {
-    if (!E.insertMode) {
-        if (E.cx == E.lastrow->len) return;
-        memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);
+void deleteCharBeforeCursorAtCommandLine(void) 
+{
+        if (E.cx == 0) return;
+        memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
+        E.cx--;
         E.lastrow->len--;
         return;
-    }
+}
 
+
+void deleteCharAtCursor(void) {
     erow *row = &E.row[E.cy];
 
     if (E.cx < 0 || E.cx > row->len) return;
@@ -155,6 +149,13 @@ void deleteCharAtCursor(void) {
     }
     memmove(&row->chars[E.cx], &row->chars[E.cx + 1], row->len - E.cx+1);
     row->len--;
+}
+
+void deleteCharAtCursorAtCommandLine(void) {
+        if (E.cx == E.lastrow->len) return;
+        memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);
+        E.lastrow->len--;
+        return;
 }
 
 // what index to be inserted in
@@ -216,20 +217,6 @@ void insertRowWithText(int at, const char *s, size_t len) {
 
 
 void insertChar(int c) {
-    if (!E.insertMode) {
-        char ch = (char) c;
-        char* newstr = realloc(E.lastrow->chars, E.lastrow->len + 2);
-        if (!newstr) return;
-        memmove(&newstr[E.cx+1], &newstr[E.cx], (E.lastrow->len - E.cx + 1));
-    
-        newstr[E.cx] = ch;      // store character
-    
-        E.lastrow->chars = newstr;
-        E.lastrow->len++;
-        E.cx++;
-        return;
-    }
-
     if (E.numrows == 0) {
         insertRow(0);
     }
@@ -243,12 +230,27 @@ void insertChar(int c) {
     if (!newstr) return;
     memmove(&newstr[E.cx+1], &newstr[E.cx], (row->len - E.cx + 1));
     
-    newstr[E.cx] = ch;      // store character
+    newstr[E.cx] = ch;
     
     row->chars = newstr;
     row->len++;
     E.cx++;
 }
+
+void insertCharAtCommandLine(int c) {
+    char ch = (char) c;
+    char* newstr = realloc(E.lastrow->chars, E.lastrow->len + 2);
+    if (!newstr) return;
+    memmove(&newstr[E.cx+1], &newstr[E.cx], (E.lastrow->len - E.cx + 1));
+    
+    newstr[E.cx] = ch;
+    
+    E.lastrow->chars = newstr;
+    E.lastrow->len++;
+    E.cx++;
+    return;
+}
+
 
 void sendCommand(void) {
     parseCommand(E.lastrow->chars);
@@ -262,47 +264,79 @@ void sendCommand(void) {
     E.cy = E.lastcy;
 }
 
-void processKey(int c) {
-    switch (c){
-        case CTRL_KEY('q'):
-            write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
-            write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
-            cleanup();
-            disableAltBuff();
-            exit(0);
-            break;
-
+void processCommandKey(int c) 
+{
+    switch (c) {
         case '\n':
         case '\r':
-            if (!E.insertMode) {
-                sendCommand();
-                break;
-            }
-            splitRow(E.cy, E.cx);
+            sendCommand();
             break;
-
         case 127:
         case '\b':
-            if (E.numrows == 0 && E.insertMode) return;
-            deleteCharBeforeCursor();
+            deleteCharBeforeCursorAtCommandLine();
+            break;
+        case '\t':
+            for (int i = 0; i < 4; i++) {
+                insertCharAtCommandLine(32);
+            }
+            break;
+        case DEL_KEY:
+            deleteCharAtCursorAtCommandLine();
+            break;
+        case ARROW_LEFT:
+            if (E.cx > 0) E.cx--;
+            break;
+        case ARROW_RIGHT:
+            if (E.cx < E.lastrow->len) E.cx++;
+            break;
+
+        case HOME_KEY:
+            E.cx=0; 
             break;
         
+        case END_KEY:
+            E.cx=E.lastrow->len;
+            break;
+
+        case '\x1b':
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
+            E.lastrow->len = 0;
+            E.insertMode = true;
+            E.cx = E.lastcx;
+            E.cy = E.lastcy;
+            break;
+        
+        default:
+            insertCharAtCommandLine(c);
+            break;
+    }
+}
+
+void processBufferKey(int c) 
+{
+    switch (c) {
+        case '\n':
+        case '\r':
+            splitRow(E.cy, E.cx);
+            break;
+        case 127:
+        case '\b':
+            if (E.numrows == 0) return;
+            deleteCharBeforeCursor();
+            break;
         case '\t':
             for (int i = 0; i < 4; i++) {
                 insertChar(32);
             }
             break;
-            
+
         case DEL_KEY:
-            if (E.numrows == 0 && E.insertMode) return;
+            if (E.numrows == 0) return;
             deleteCharAtCursor();
             break;
-        
+
         case ARROW_LEFT:
-            if (!E.insertMode) {
-                if (E.cx > 0) E.cx--;
-                break;
-            }
             if (E.numrows == 0) return;
             if (E.cx > 0) E.cx--;
             else if (E.cy > 0) { 
@@ -312,10 +346,6 @@ void processKey(int c) {
             break;
 
         case ARROW_RIGHT:
-            if (!E.insertMode) {
-                if (E.cx < E.lastrow->len) E.cx++;
-                break;
-            }
             if (E.numrows == 0) return;
             if (E.cx < E.row[E.cy].len) E.cx++;
             else if (E.cy + 1 < E.numrows) {
@@ -344,24 +374,6 @@ void processKey(int c) {
             }
             break;
 
-        case HOME_KEY:
-            if (!E.insertMode) {
-                 E.cx=0; 
-                 break;
-            }
-            if (E.numrows == 0) return;
-            E.cx = 0;
-            break;
-
-        case END_KEY:
-            if (!E.insertMode) {
-                E.cx=E.lastrow->len; 
-                break;
-            }
-            if (E.numrows == 0) return;
-            E.cx = E.row[E.cy].len;
-            break;
-
         case PAGE_UP:
             if (E.numrows == 0) return;
             E.cy = E.cy - E.screenHeight + 1;
@@ -388,28 +400,47 @@ void processKey(int c) {
             }
             break;
 
-        case '\x1b':
-            if (E.insertMode == true) { 
-                E.insertMode = false;
-                E.lastcx = E.cx;
-                E.lastcy = E.cy;
-                E.cy = E.screenHeight + E.rowoff;
-                E.cx = 0;
-            }
-            
-            else {
-                free(E.lastrow->chars);
-                E.lastrow->chars = strdup("");
-                E.lastrow->len = 0;
-
-                E.insertMode = true;
-                E.cx = E.lastcx;
-                E.cy = E.lastcy;
-            }
+        case HOME_KEY:
+            if (E.numrows == 0) return;
+            E.cx = 0;
             break;
 
+        case END_KEY:
+            if (E.numrows == 0) return;
+            E.cx = E.row[E.cy].len;
+            break;
+
+        case '\x1b':
+            E.insertMode = false;
+            E.lastcx = E.cx;
+            E.lastcy = E.cy;
+            E.cy = E.screenHeight + E.rowoff;
+            E.cx = 0;
+            break;
+        
         default:
             insertChar(c);
             break;
+    }
+}
+
+void processKey(int c) {
+    if (c == CTRL_KEY('q'))
+    {
+        write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
+        write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+        cleanup();
+        disableAltBuff();
+        exit(0);
+    }
+
+    if (E.insertMode)
+    {
+        processBufferKey(c);
+    }
+
+    else
+    {
+        processCommandKey(c);
     }
 }
