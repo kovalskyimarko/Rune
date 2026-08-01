@@ -43,11 +43,9 @@ void savefile(void) {
     char *target_path = NULL;
 
     if (E.lastrow && E.lastrow->len > 3) {
-        target_path = expandPath
-    (&E.lastrow->chars[3]);
+        target_path = expandPath(&E.lastrow->chars[3]);
         if (!target_path) return;
-        
-        
+           
         editorSetFilename(target_path);
     } 
     
