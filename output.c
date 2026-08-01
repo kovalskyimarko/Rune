@@ -25,7 +25,7 @@ void appendCentered(buffer *b, const char *s) {
 
 void scroll(void)
 {
-    if (!E.insertMode)
+    if (E.mode == COMMANDLINE_MODE)
     {
         return;
     }
@@ -38,11 +38,11 @@ void scroll(void)
        E.coloff = E.cx - E.screenWidth + 1;
     }
 
-    if (E.cy < E.rowoff && E.insertMode) {
+    if (E.cy < E.rowoff) {
         E.rowoff = E.cy;
     }
 
-    if (E.cy >= E.rowoff + E.screenHeight && E.insertMode) {
+    if (E.cy >= E.rowoff + E.screenHeight) {
         E.rowoff = E.cy - E.screenHeight + 1;
     }
 }
@@ -59,7 +59,7 @@ void scrollAtCommandLine(void)
 }
 
 void bufferAppendRows(buffer *b) {
-    if (E.insertMode)
+    if (E.mode != COMMANDLINE_MODE)
     {
         scroll();
     }
@@ -102,7 +102,7 @@ void bufferAppendRows(buffer *b) {
     }
 
     
-    if (E.insertMode) {
+    if (E.mode != COMMANDLINE_MODE) {
         bufferAppend(b, "\x1b[7m", 4);    
         char status[80];
         int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
@@ -115,9 +115,20 @@ void bufferAppendRows(buffer *b) {
         if (len > E.screenWidth) len = E.screenWidth;
         bufferAppend(b, status, len);
 
+        char *mode_str = (E.mode == NORMAL_MODE) ? "--NORMAL--" : "--INSERT--";
+        int rlen = strlen(mode_str);
         while (len < E.screenWidth) {
-            bufferAppend(b, " ", 1);
-            len++;
+            if (E.screenWidth - len == rlen)
+            {
+                bufferAppend(b, mode_str, rlen);
+                break;
+            }
+
+            else 
+            {
+                bufferAppend(b, " ", 1);
+                len++;
+            }
         }
 
         bufferAppend(b, "\x1b[m", 3);
@@ -146,7 +157,7 @@ void refreshScreen(void) {
     int posY;
     int posX;
 
-    if (E.insertMode)
+    if (E.mode != COMMANDLINE_MODE)
     {
         posY = E.cy - E.rowoff + 1;
         posX = E.cx - E.coloff + 1;
@@ -154,7 +165,7 @@ void refreshScreen(void) {
 
     else
     {
-        posY = E.cy + 1;
+        posY = E.screenHeight + 1;
         posX = E.cx - E.commandlineColloff + 1;
     }
 

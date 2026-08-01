@@ -41,6 +41,12 @@ enum SPECIAL_KEYS {
     PAGE_DOWN = 1008
 };
 
+typedef enum MODES {
+    INSERT_MODE,
+    NORMAL_MODE,
+    COMMANDLINE_MODE
+} MODES;
+
 typedef struct erow {
     char* chars;
     int len;
@@ -60,7 +66,7 @@ struct editorConfig {
     int commandlineColloff;
     char *filepath;
     char *filename;
-    bool insertMode;
+    MODES mode;
     erow* row;  /* Pointer to current row*/
     erow* lastrow;
 };

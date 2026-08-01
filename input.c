@@ -259,7 +259,7 @@ void sendCommand(void) {
     E.lastrow->chars = strdup("");
     E.lastrow->len = 0;
 
-    E.insertMode = true;
+    E.mode = NORMAL_MODE;
     E.cx = E.lastcx;
     E.cy = E.lastcy;
 }
@@ -302,13 +302,28 @@ void processCommandKey(int c)
             free(E.lastrow->chars);
             E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
-            E.insertMode = true;
             E.cx = E.lastcx;
-            E.cy = E.lastcy;
+            E.mode = NORMAL_MODE;
             break;
         
         default:
             insertCharAtCommandLine(c);
+            break;
+    }
+}
+
+void processNormalModeKey(int c)
+{
+    switch (c)
+    {
+        case 'i':
+            E.mode = INSERT_MODE;
+            break;
+        case ':':
+            E.mode = COMMANDLINE_MODE;
+            E.lastcx = E.cx;
+            E.cx = 0;
+            insertCharAtCommandLine(':');
             break;
     }
 }
@@ -411,11 +426,7 @@ void processBufferKey(int c)
             break;
 
         case '\x1b':
-            E.insertMode = false;
-            E.lastcx = E.cx;
-            E.lastcy = E.cy;
-            E.cy = E.screenHeight + E.rowoff;
-            E.cx = 0;
+            E.mode = NORMAL_MODE;
             break;
         
         default:
@@ -434,13 +445,16 @@ void processKey(int c) {
         exit(0);
     }
 
-    if (E.insertMode)
+    switch (E.mode)
     {
-        processBufferKey(c);
-    }
-
-    else
-    {
-        processCommandKey(c);
+        case INSERT_MODE:
+            processBufferKey(c);
+            break;
+        case NORMAL_MODE:
+            processNormalModeKey(c);
+            break;
+        case COMMANDLINE_MODE:
+            processCommandKey(c);
+            break;
     }
 }

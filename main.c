@@ -18,7 +18,7 @@ void init(void) {
     E.coloff = 0;
     E.rowoff = 0;
     E.filename = NULL;
-    E.insertMode = true;
+    E.mode = INSERT_MODE;
     getWindowSize(&E.screenHeight, &E.screenWidth);
     E.screenHeight-=1; // For the status bar
     E.lastrow = malloc(sizeof(erow));
