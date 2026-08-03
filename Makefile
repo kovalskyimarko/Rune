@@ -9,7 +9,7 @@ debug: CFLAGS += -g
 debug: rebuild
 
 # Source files
-SRCS = main.c terminal.c input.c output.c file.c
+SRCS = main.c terminal.c  input_processkeys.c input.c output.c file.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)

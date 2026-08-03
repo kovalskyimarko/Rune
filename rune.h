@@ -83,7 +83,20 @@ void disableAltBuff(void);
 void enableRawMode(void);
 void getWindowSize(int *rows, int *cols);
 
+// input_processkeys.c
+void processCommandKey(int c);
+void processNormalModeKey(int c);
+void processBufferKey(int c) ;
+
 // input.c
+void splitRow(int y, int x);
+void sendCommand(void);
+void deleteCharBeforeCursorAtCommandLine(void);
+void insertCharAtCommandLine(int c);
+void deleteCharAtCursorAtCommandLine(void);
+void deleteCharBeforeCursor(void);
+void deleteCharAtCursor(void);
+void insertChar(int c);
 int readKey(void);
 void processKey(int c);
 void insertRowWithText(int at, const char *s, size_t len);
