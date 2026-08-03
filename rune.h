@@ -44,7 +44,8 @@ enum SPECIAL_KEYS {
 typedef enum MODES {
     INSERT_MODE,
     NORMAL_MODE,
-    COMMANDLINE_MODE
+    COMMANDLINE_MODE,
+    VISUAL_MODE
 } MODES;
 
 typedef struct erow {
@@ -64,6 +65,7 @@ struct editorConfig {
     int coloff; /* From what position start rendering the columns*/
     int rowoff; /* From what position start rendering the rows*/
     int commandlineColloff;
+    int normalModeMult;
     char *filepath;
     char *filename;
     MODES mode;

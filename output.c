@@ -115,7 +115,23 @@ void bufferAppendRows(buffer *b) {
         if (len > E.screenWidth) len = E.screenWidth;
         bufferAppend(b, status, len);
 
-        char *mode_str = (E.mode == NORMAL_MODE) ? "--NORMAL--" : "--INSERT--";
+        char *mode_str;
+
+        if (E.mode == NORMAL_MODE)
+        {
+            mode_str = "--NORMAL--";
+        }
+
+        else if (E.mode == INSERT_MODE)
+        {
+            mode_str = "--INSERT--";
+        }
+
+        else
+        {
+            mode_str = "--VISUAL--";
+        }
+
         int rlen = strlen(mode_str);
         while (len < E.screenWidth) {
             if (E.screenWidth - len == rlen)
