@@ -79,7 +79,50 @@ void bufferAppendRows(buffer *b) {
                 int visible = len - E.coloff;
                 if (visible > E.screenWidth) visible = E.screenWidth;
 
-                bufferAppend(b, &row->chars[E.coloff], visible);
+                int sy = E.vStartcy, sx = E.vStartcx;
+                int ey = E.cy, ex = E.cx;
+
+                if (sy > ey) {
+                    sy = E.cy; ey = E.vStartcy;
+                    sx = E.cx; ex = E.vStartcx;
+                } else if (sy == ey && sx > ex) {
+                    sx = E.cx; ex = E.vStartcx;
+                }
+
+                bool hl_active = false;
+
+                for (int j = 0; j < visible; j++)
+                {
+                    int cx = E.coloff + j;
+                    int cy = i;
+
+                    bool in_hl = false;
+
+                    if (E.mode == VISUAL_MODE) {
+                        if (cy > sy && cy < ey) in_hl = true;                                 // Between rows
+                        else if (sy == ey && cy == sy && cx >= sx && cx <= ex) in_hl = true;  // On one row
+                        else if (cy == sy && cy < ey && cx >= sx) in_hl = true;               // First row
+                        else if (cy == ey && cy > sy && cx <= ex) in_hl = true;               // Last row
+                    }
+
+                    if (in_hl && !hl_active) {
+                        bufferAppend(b, "\x1b[7m", 4);
+                        hl_active = true;
+                    }
+
+                    else if (!in_hl && hl_active) {
+                        bufferAppend(b, "\x1b[m", 3);
+                        hl_active = false;
+                    }
+
+                    bufferAppend(b, &row->chars[cx], 1);
+                }
+
+                if (hl_active) {
+                    bufferAppend(b, "\x1b[m", 3);
+                }
+
+                //bufferAppend(b, &row->chars[E.coloff], visible);
             }
         }
         else {

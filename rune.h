@@ -57,8 +57,9 @@ struct editorConfig {
     struct termios originalTermSettings;
     int cx; /* Cursor x position*/
     int cy; /* Cursor y position*/
-    int lastcy;
     int lastcx;
+    int vStartcx;
+    int vStartcy;
     int screenWidth;
     int screenHeight;
     int numrows;
@@ -86,6 +87,7 @@ void getWindowSize(int *rows, int *cols);
 // input_processkeys.c
 void processCommandKey(int c);
 void processNormalModeKey(int c);
+void porcessVisualModeKey(int c);
 void processBufferKey(int c) ;
 
 // input.c

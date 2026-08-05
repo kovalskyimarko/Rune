@@ -261,7 +261,6 @@ void sendCommand(void) {
 
     E.mode = NORMAL_MODE;
     E.cx = E.lastcx;
-    E.cy = E.lastcy;
 }
 
 void processKey(int c) {
@@ -286,6 +285,7 @@ void processKey(int c) {
             processCommandKey(c);
             break;
         case VISUAL_MODE:
+            porcessVisualModeKey(c);
             break;
     }
 }
