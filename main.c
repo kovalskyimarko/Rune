@@ -24,6 +24,7 @@ void init(void) {
     E.lastrow = malloc(sizeof(erow));
     E.lastrow->chars = malloc(E.screenWidth);
     E.lastrow->len = 0;
+    E.yankbuff = NULL;
 }
 
 void cleanup(void) {
@@ -45,6 +46,7 @@ void cleanup(void) {
 
     if (E.filepath) free(E.filepath);
     if (E.filename) free(E.filename);
+    if (E.yankbuff) free(E.yankbuff);
 }
 
 int main(void) {

@@ -67,6 +67,7 @@ struct editorConfig {
     int rowoff; /* From what position start rendering the rows*/
     int commandlineColloff;
     int normalModeMult;
+    char *yankbuff;
     char *filepath;
     char *filename;
     MODES mode;
@@ -99,6 +100,7 @@ void deleteCharAtCursorAtCommandLine(void);
 void deleteCharBeforeCursor(void);
 void deleteCharAtCursor(void);
 void insertChar(int c);
+void insertString(const char *s, int len);
 int readKey(void);
 void processKey(int c);
 void insertRowWithText(int at, const char *s, size_t len);

@@ -310,6 +310,34 @@ void processNormalModeKey(int c)
             moveCursorKeyBinds(c);
             break;
         
+        case 'p': {
+            if (!E.yankbuff) return;
+
+            int len = strlen(E.yankbuff);
+            int tempLenRow = 0;
+            int offset = 0;
+
+            for (int i = 0; i < len; i++)
+            {
+                if (E.yankbuff[i] != '\n')
+                {
+                    tempLenRow+=1;
+                }
+
+                else
+                {
+                    insertString(&E.yankbuff[offset], tempLenRow);
+                    splitRow(E.cy, E.cx);
+                    offset+=tempLenRow + 1; // +1 to skip \n
+                    tempLenRow = 0;
+                }
+            }
+
+            insertString(&E.yankbuff[offset], tempLenRow);
+
+            break;
+        }
+        
         case 'A':
             if (E.numrows > 0)
                 E.cx = E.row[E.cy].len;
@@ -336,6 +364,133 @@ void porcessVisualModeKey(int c)
 {
     switch (c)
     {
+        case 'y': {
+            if (E.yankbuff) free(E.yankbuff);
+            E.yankbuff = NULL;
+            int len = 0;
+
+            int startY = E.vStartcy;
+            int endY =   E.cy;
+
+            int startX = E.vStartcx;
+            int endX =   E.cx;
+
+            if (endY < startY)
+            {
+                int t = endY;
+                endY = startY;
+                startY = t;
+
+                t = endX;
+                endX = startX;
+                startX = t;
+            }
+
+            if ((endX < startX) && (startY == endY))
+            {
+                int t = endX;
+                endX = startX;
+                startX = t;
+            }
+
+            if (endX >= E.row[endY].len) {
+                endX = E.row[endY].len - 1;
+            }
+
+            if (endX < 0) {
+                endX = 0; 
+            }
+
+            if (startY < endY) 
+            {
+                for (int currY = startY; currY <= endY; currY++)
+                {
+                    if (currY == startY)
+                    {
+                        len += E.row[startY].len - startX;
+                    }
+
+                    else if (currY < endY)
+                    {
+                        len += E.row[currY].len;
+                    }
+                    
+                    else if (currY == endY)
+                    {
+                        len += endX + 1;
+                    }
+
+                    if (currY != endY)
+                    {
+                        len+=1;
+                    }
+                }
+            }
+            else if (startY == endY) 
+            {
+                len = endX - startX + 1;
+            }
+
+            len+=1;
+
+            E.yankbuff = malloc(len);
+            if (!E.yankbuff) return;
+            int currIndex = 0;
+
+            if (startY < endY) 
+            {
+                for (int currRow = startY; currRow <= endY; currRow++)
+                {
+                    if (currRow == startY)
+                    {
+                        for (int currRowIndex = startX; currRowIndex < E.row[currRow].len; currRowIndex++)
+                        {
+                            E.yankbuff[currIndex] = E.row[currRow].chars[currRowIndex];
+                            currIndex++;
+                        }
+                    }
+
+                    else if (currRow < endY)
+                    {
+                        for (int currRowIndex = 0; currRowIndex < E.row[currRow].len; currRowIndex++)
+                        {
+                            E.yankbuff[currIndex] = E.row[currRow].chars[currRowIndex];
+                            currIndex++;
+                        }
+                    }
+                    
+                    else if (currRow == endY)
+                    {
+                        for (int currRowIndex = 0; currRowIndex <= endX; currRowIndex++)
+                        {
+                            E.yankbuff[currIndex] = E.row[currRow].chars[currRowIndex];
+                            currIndex++;
+                        }
+                    }
+
+                    if (currRow != endY)
+                    {
+                        E.yankbuff[currIndex] = '\n';
+                        currIndex++;
+                    }
+                }
+            }
+
+            else if (startY == endY) 
+            {
+                for (int i = startX; i <= endX; i++)
+                {
+                    E.yankbuff[currIndex] = E.row[startY].chars[i];
+                    currIndex++;
+                }
+            }
+
+            E.yankbuff[currIndex] = '\0';
+            E.mode = NORMAL_MODE;
+
+            break;
+        }
+
         case '0':case'$':
         case '1': case '2': case '3': case '4': case '5':
         case '6': case '7': case '8': case '9':

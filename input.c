@@ -237,6 +237,28 @@ void insertChar(int c) {
     E.cx++;
 }
 
+void insertString(const char *s, int len) {
+    if (E.numrows == 0) {
+        insertRow(0);
+    }
+
+    erow* row = &E.row[E.cy];
+
+    if (E.cx < 0) E.cx = 0;
+    if (E.cx > row->len) E.cx = row->len;
+
+    char* newstr = realloc(row->chars, row->len + len + 1);
+    if (!newstr) return;
+
+    memmove(&newstr[E.cx + len], &newstr[E.cx], row->len - E.cx + 1);
+
+    memcpy(&newstr[E.cx], s, len);
+
+    row->chars = newstr;
+    row->len += len;
+    E.cx += len;
+}
+
 void insertCharAtCommandLine(int c) {
     char ch = (char) c;
     char* newstr = realloc(E.lastrow->chars, E.lastrow->len + 2);
