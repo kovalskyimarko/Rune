@@ -58,32 +58,149 @@ int readKey(void) {
     return c;
 }
 
+
+void showMessageAtCommandLine(const char *s, int len) {
+    if (!E.lastrow) {
+        E.lastrow = malloc(sizeof(erow));
+        E.lastrow->chars = NULL;
+    }
+
+    if (E.lastrow->chars) {
+        free(E.lastrow->chars);
+    }
+
+    E.lastrow->chars = malloc(len + 1);
+    if (!E.lastrow->chars) return;
+
+    strcpy(E.lastrow->chars, s);
+    E.lastrow->len = len;
+}
+
 void parseCommand(const char *cmd) {
     while (*cmd == ' ') cmd++;
 
-    if (strncmp(cmd, ":w", 2) == 0 &&
-        (cmd[2] == '\0' || cmd[2] == ' ')) {
+    if (strncmp(cmd, ":q", 2) == 0 &&
+        cmd[2] == '\0') {
+        
+        if (E.dirty > 0)
+        {
+            const char* message = "Unsaved changes. To quit without saving write :q!";
+            showMessageAtCommandLine(message, strlen(message));
+        }
 
-        if (cmd[2] == ' ') {
-            free(E.filepath);
-            E.filepath = NULL;
-            free(E.filename);
-            E.filename = NULL;
+        else
+        {
+            processKey(CTRL_KEY('q'));
+        }
+
+    }
+
+    else if (strncmp(cmd, ":q!", 3) == 0 &&
+        cmd[3] == '\0') {
+        processKey(CTRL_KEY('q'));
+    }
+
+    else if((strncmp(cmd, ":wq", 3) == 0 && (cmd[3] == '\0' || cmd[3] == ' ')) || 
+        (strncmp(cmd, ":x", 2) == 0&& (cmd[2] == '\0' || cmd[2] == ' '))) {
+
+        char *space_ptr = strchr(cmd, ' ');
+
+        if (space_ptr != NULL) {
+            while (*space_ptr == ' ') space_ptr++;
+
+            if (*space_ptr != '\0') {
+                char *target_path = expandPath(space_ptr);
+                if (target_path)
+                {
+                    editorSetFilename(target_path);
+                    free(target_path);
+                }
+            }
         }
 
         savefile();
-        return;
+        processKey(CTRL_KEY('q'));
     }
 
-    if (strncmp(cmd, ":e", 2) == 0 &&
+    else if (strncmp(cmd, ":pwd", 4) == 0 &&
+        cmd[4] == '\0') {
+        
+        char buf[1024];
+        if (getcwd(buf, sizeof(buf)) != NULL) {
+            showMessageAtCommandLine(buf, strlen(buf));
+        } else {
+            const char* errormessage = "Unknown error";
+            showMessageAtCommandLine(errormessage, strlen(errormessage));
+        }
+
+    }
+
+    else if (strncmp(cmd, ":info", 5) == 0 &&
+        cmd[5] == '\0') {
+
+        long size = -1;
+        
+        if (E.filename != NULL)
+        {
+            FILE *fp = fopen(E.filename, "rb");
+            if (fp != NULL)
+            {
+                
+                if (fseek(fp, 0, SEEK_END) == 0) 
+                {
+                    size = ftell(fp);
+                    fclose(fp);
+                }
+            }
+        }
+
+        char buf[128];
+        snprintf(buf, sizeof(buf),
+             "Number of rows: %d, Cursor pos: x: %d, y: %d, size: %s%ld",
+            E.numrows, E.cx + 1, E.cy + 1,
+            size == -1 ? "No file, " : "",
+            size == -1 ? 0 : size);
+
+        showMessageAtCommandLine(buf, strlen(buf));
+    }
+
+    else if (strncmp(cmd, ":w", 2) == 0 &&
+        (cmd[2] == '\0' || cmd[2] == ' ')) {
+
+        char *space_ptr = strchr(cmd, ' ');
+
+        if (space_ptr != NULL) {
+            while (*space_ptr == ' ') space_ptr++;
+
+            if (*space_ptr != '\0') {
+                char *target_path = expandPath(space_ptr);
+                if (target_path)
+                {
+                    editorSetFilename(target_path);
+                    free(target_path);
+                }
+            }
+        }
+
+        savefile();
+    }
+
+    else if (strncmp(cmd, ":e", 2) == 0 &&
         (cmd[2] == '\0' || cmd[2] == ' ')) {
 
         openfile();
         return;
     }
+
+    else 
+    {
+        const char* errormessage = "Unknown command";
+        showMessageAtCommandLine(errormessage, strlen(errormessage));
+    }
 }
 
 void deleteCharBeforeCursor(void) {
+    E.dirty++;
     if (E.cx == 0) {
         if (E.cy == 0) return;
 
@@ -116,15 +233,16 @@ void deleteCharBeforeCursor(void) {
 
 void deleteCharBeforeCursorAtCommandLine(void) 
 {
-        if (E.cx == 0) return;
-        memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
-        E.cx--;
-        E.lastrow->len--;
-        return;
+    if (E.cx == 0) return;
+    memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
+    E.cx--;
+    E.lastrow->len--;
+    return;
 }
 
 
 void deleteCharAtCursor(void) {
+    E.dirty++;
     erow *row = &E.row[E.cy];
 
     if (E.cx < 0 || E.cx > row->len) return;
@@ -156,6 +274,7 @@ void deleteCharAtCursorAtCommandLine(void) {
 }
 
 void insertRow(int at) {
+    E.dirty++;
     if (at < 0 || at > E.numrows) return;
 
     erow *tmp = realloc(E.row, sizeof(erow) * (E.numrows + 1));
@@ -174,6 +293,7 @@ void insertRow(int at) {
 }
 
 void splitRow(void) {
+    E.dirty++;
     erow *row = &E.row[E.cy];
 
     if (E.cx > row->len) E.cx = row->len;
@@ -211,6 +331,7 @@ void insertRowWithText(int at, const char *s, size_t len) {
 
 
 void insertChar(int c) {
+    E.dirty++;
     if (E.numrows == 0) {
         insertRow(0);
     }
@@ -232,6 +353,7 @@ void insertChar(int c) {
 }
 
 void insertString(const char *s, int len) {
+    E.dirty+=len;
     if (E.numrows == 0) {
         insertRow(0);
     }

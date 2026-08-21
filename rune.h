@@ -55,6 +55,7 @@ typedef struct erow {
 
 struct editorConfig {
     struct termios originalTermSettings;
+    int dirty; // Flag for how many changes in a file
     int cx; /* Cursor x position*/
     int cy; /* Cursor y position*/
     int lastcx;
@@ -93,6 +94,7 @@ void processBufferKey(int c) ;
 
 // input.c
 void splitRow(void);
+void showMessageAtCommandLine(const char *s, int len);
 void sendCommand(void);
 void deleteCharBeforeCursorAtCommandLine(void);
 void insertCharAtCommandLine(int c);
@@ -106,6 +108,8 @@ void processKey(int c);
 void insertRowWithText(int at, const char *s, size_t len);
 
 // file.c
+void editorSetFilename(const char *path);
+char* expandPath(const char *input);
 void savefile(void);
 void openfile(void);
 
