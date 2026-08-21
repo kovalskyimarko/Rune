@@ -459,7 +459,7 @@ void processNormalModeKey(int c)
                 else
                 {
                     insertString(&E.yankbuff[offset], tempLenRow);
-                    splitRow(E.cy, E.cx);
+                    splitRow();
                     offset+=tempLenRow + 1; // +1 to skip \n
                     tempLenRow = 0;
                 }
@@ -586,7 +586,7 @@ void processBufferKey(int c)
     switch (c) {
         case '\n':
         case '\r':
-            splitRow(E.cy, E.cx);
+            splitRow();
             break;
         case 127:
         case '\b':

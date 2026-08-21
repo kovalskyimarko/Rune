@@ -122,7 +122,6 @@ void bufferAppendRows(buffer *b) {
                     bufferAppend(b, "\x1b[m", 3);
                 }
 
-                //bufferAppend(b, &row->chars[E.coloff], visible);
             }
         }
         else {

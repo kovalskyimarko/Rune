@@ -59,13 +59,11 @@ int readKey(void) {
 }
 
 void parseCommand(const char *cmd) {
-    while (*cmd == ' ') cmd++;   // skip leading spaces
+    while (*cmd == ' ') cmd++;
 
-    /* Write */
     if (strncmp(cmd, ":w", 2) == 0 &&
         (cmd[2] == '\0' || cmd[2] == ' ')) {
 
-        /* optional filename after :w */
         if (cmd[2] == ' ') {
             free(E.filepath);
             E.filepath = NULL;
@@ -77,7 +75,6 @@ void parseCommand(const char *cmd) {
         return;
     }
 
-    /* Edit / open */
     if (strncmp(cmd, ":e", 2) == 0 &&
         (cmd[2] == '\0' || cmd[2] == ' ')) {
 
@@ -158,7 +155,6 @@ void deleteCharAtCursorAtCommandLine(void) {
         return;
 }
 
-// what index to be inserted in
 void insertRow(int at) {
     if (at < 0 || at > E.numrows) return;
 
@@ -177,24 +173,22 @@ void insertRow(int at) {
     E.numrows++;
 }
 
-void splitRow(int y, int x) {
-    if (y < 0 || y >= E.numrows) return;
-    if (x < 0) x = 0;
-    erow *row = &E.row[y];
+void splitRow(void) {
+    erow *row = &E.row[E.cy];
 
-    if (x > row->len) x = row->len;
+    if (E.cx > row->len) E.cx = row->len;
 
-    char *right = strdup(row->chars + x);
+    char *right = strdup(row->chars + E.cx);
     if (!right) return;
 
-    row->chars[x] = '\0';
-    row->len = x;
+    row->chars[E.cx] = '\0';
+    row->len = E.cx;
 
-    insertRow(y + 1);
+    insertRow(E.cy + 1);
 
-    free(E.row[y + 1].chars);
-    E.row[y + 1].chars = right;
-    E.row[y + 1].len = strlen(right);
+    free(E.row[E.cy + 1].chars);
+    E.row[E.cy + 1].chars = right;
+    E.row[E.cy + 1].len = strlen(right);
     E.cy++;
     E.cx = 0;
 }

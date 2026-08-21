@@ -92,7 +92,7 @@ void porcessVisualModeKey(int c);
 void processBufferKey(int c) ;
 
 // input.c
-void splitRow(int y, int x);
+void splitRow(void);
 void sendCommand(void);
 void deleteCharBeforeCursorAtCommandLine(void);
 void insertCharAtCommandLine(int c);
