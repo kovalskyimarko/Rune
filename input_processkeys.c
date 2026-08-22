@@ -498,6 +498,8 @@ void processNormalModeKey(int c)
             break;
 
         case ':':
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
             E.mode = COMMANDLINE_MODE;
             E.lastcx = E.cx;
             E.cx = 0;

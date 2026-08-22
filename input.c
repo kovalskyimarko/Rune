@@ -156,10 +156,14 @@ void parseCommand(const char *cmd) {
 
         char buf[128];
         snprintf(buf, sizeof(buf),
-             "Number of rows: %d, Cursor pos: x: %d, y: %d, size: %s%ld",
-            E.numrows, E.cx + 1, E.cy + 1,
-            size == -1 ? "No file, " : "",
-            size == -1 ? 0 : size);
+            "File: %s, Number of rows: %d, Cursor pos: x: %d, y: %d, size: %s%ld %s%s",
+            E.filename ? E.filename : "[No Name]",
+            E.numrows,
+            E.cx + 1,
+            E.cy + 1,
+            size == -1 ? 0 : size,
+            size == -1 ? "" : "bytes",
+            E.dirty > 0 ? " [ MODIFIED ]" : "");
 
         showMessageAtCommandLine(buf, strlen(buf));
     }
@@ -187,9 +191,38 @@ void parseCommand(const char *cmd) {
 
     else if (strncmp(cmd, ":e", 2) == 0 &&
         (cmd[2] == '\0' || cmd[2] == ' ')) {
+        if (cmd[2] == '\0')
+        {
+            if (E.filename == NULL)
+            {
+                const char* errormessage = "No file name: Usage :e file_name";
+                showMessageAtCommandLine(errormessage, strlen(errormessage));
+            }
 
-        openfile();
-        return;
+            else
+            {
+                openfile(E.filepath);
+            }
+        }
+
+        else
+        {
+            char *space_ptr = strchr(cmd, ' ');
+            if (*space_ptr != '\0')
+            {
+                while (*space_ptr == ' ') space_ptr++;
+
+                if (*space_ptr != NULL)
+                {
+                    char *target_path = expandPath(space_ptr);
+                    if (target_path)
+                    {
+                        openfile(target_path);
+                        free(target_path);
+                    }
+                }
+            }
+        }
     }
 
     else 
@@ -293,7 +326,6 @@ void insertRow(int at) {
 }
 
 void splitRow(void) {
-    E.dirty++;
     erow *row = &E.row[E.cy];
 
     if (E.cx > row->len) E.cx = row->len;
@@ -391,7 +423,7 @@ void insertCharAtCommandLine(int c) {
 
 
 void sendCommand(void) {
-    parseCommand(E.lastrow->chars);
+    char *cmd_copy = strdup(E.lastrow->chars);
 
     free(E.lastrow->chars);
     E.lastrow->chars = strdup("");
@@ -399,6 +431,9 @@ void sendCommand(void) {
 
     E.mode = NORMAL_MODE;
     E.cx = E.lastcx;
+
+    parseCommand(cmd_copy);
+    free(cmd_copy);
 }
 
 void processKey(int c) {

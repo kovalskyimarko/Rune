@@ -144,7 +144,7 @@ void bufferAppendRows(buffer *b) {
     }
 
     
-    if (E.mode != COMMANDLINE_MODE) {
+    if (E.mode != COMMANDLINE_MODE && (!E.lastrow || !E.lastrow->chars || strcmp(E.lastrow->chars, "") == 0)) {
         bufferAppend(b, "\x1b[7m", 4);    
         char status[80];
         int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
@@ -194,12 +194,25 @@ void bufferAppendRows(buffer *b) {
 
     else {
         bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
-        int cmd_len = E.lastrow->len - E.commandlineColloff;
 
-        if (cmd_len > E.screenWidth)
-            cmd_len = E.screenWidth;
+        if (E.lastrow && E.lastrow->chars) {
+            int cmd_len = E.lastrow->len - E.commandlineColloff;
 
-        bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
+            if (E.mode != COMMANDLINE_MODE) {
+                bufferAppend(b, "\x1b[92m", 5); 
+            }
+
+            if (cmd_len > E.screenWidth)
+                cmd_len = E.screenWidth;
+
+            if (cmd_len < 0) cmd_len = 0;
+
+            bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
+            
+            if (E.mode != COMMANDLINE_MODE) {
+                bufferAppend(b, "\x1b[m", 3); 
+            }
+        }
     }
 }
 

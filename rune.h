@@ -111,7 +111,7 @@ void insertRowWithText(int at, const char *s, size_t len);
 void editorSetFilename(const char *path);
 char* expandPath(const char *input);
 void savefile(void);
-void openfile(void);
+void openfile(const char *fullpath);
 
 // main.c
 void init(void);

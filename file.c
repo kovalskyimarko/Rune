@@ -21,6 +21,7 @@ char* expandPath(const char *input) {
 }
 
 void editorSetFilename(const char *path) {
+    if (E.filepath == path) return;
     if (E.filepath) free(E.filepath);
     if (E.filename) free(E.filename);
 
@@ -63,15 +64,9 @@ void savefile(void) {
     E.dirty = 0;
 }
 
-void openfile(void) {
-    if (!E.lastrow || E.lastrow->len <= 3) return;
-
-    char *fullpath = expandPath(&E.lastrow->chars[3]);
-    if (!fullpath) return;
-
+void openfile(const char *fullpath) {
     FILE *fp = fopen(fullpath, "r");
     if (!fp) {
-        free(fullpath);
         return;
     }
 
@@ -80,7 +75,6 @@ void openfile(void) {
     editorSetFilename(fullpath);
     if (!E.filepath || !E.filename) {
         fclose(fp);
-        free(fullpath);
         return;
     }
 
@@ -97,6 +91,5 @@ void openfile(void) {
 
     free(line);
     fclose(fp);
-    free(fullpath);
     E.dirty = 0;
 }
