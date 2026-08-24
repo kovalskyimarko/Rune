@@ -25,7 +25,10 @@ void init(void) {
     E.lastrow->chars = malloc(E.screenWidth);
     E.lastrow->chars[0] = '\0';
     E.lastrow->len = 0;
+    E.statusmsg[0] = '\0';
     E.yankbuff = NULL;
+    E.showLineNumbers = false;
+    E.showRLineNumbers = false;
 }
 
 void cleanup(void) {

@@ -71,13 +71,46 @@ void bufferAppendRows(buffer *b) {
 
     char buf[128];
     for (int i = E.rowoff; i < E.screenHeight+E.rowoff; i++) {
+        int numWidth = 0;
+
+        if ((E.showLineNumbers || E.showRLineNumbers) && (E.numrows > i || (E.numrows == 0 && i == 0)))
+        {
+            numWidth = 5;
+            char num_buf[32];
+            int num = 0;
+
+            if (E.showLineNumbers && E.showRLineNumbers) {
+                if (i == E.cy) {
+                    num = i + 1;
+                } else
+                {
+                    num = i - E.cy;
+                    if (num < 0) num = -num;
+                }
+            }
+
+            else if (E.showRLineNumbers) {
+                num = i - E.cy;
+                if (num < 0) num = -num;
+            
+            } 
+        
+            else {
+                num = i + 1;
+            }
+
+            int nlen = snprintf(num_buf, sizeof(num_buf), "\x1b[90m%4d \x1b[m", num);
+            bufferAppend(b, num_buf, nlen);
+        }
+
         if (E.numrows > i) {
+
             erow *row = &E.row[i];
             int len = row->len;
 
             if (E.coloff < len && E.rowoff < E.numrows) {
                 int visible = len - E.coloff;
-                if (visible > E.screenWidth) visible = E.screenWidth;
+                if (visible > ( E.screenWidth - numWidth )) visible = E.screenWidth - numWidth;
 
                 int sy = E.vStartcy, sx = E.vStartcx;
                 int ey = E.cy, ex = E.cx;
@@ -125,7 +158,11 @@ void bufferAppendRows(buffer *b) {
             }
         }
         else {
-            if (E.numrows == 0 && i == E.screenHeight / 2) {
+            // The first line should never have ~
+            if (E.numrows == 0 && i == 0) {
+            }
+
+            else if (E.numrows == 0 && i == E.screenHeight / 2) {
                 appendCentered(b, "Rune - terminal based editor");
             }
 
@@ -144,7 +181,7 @@ void bufferAppendRows(buffer *b) {
     }
 
     
-    if (E.mode != COMMANDLINE_MODE && (!E.lastrow || !E.lastrow->chars || strcmp(E.lastrow->chars, "") == 0)) {
+    if (E.mode != COMMANDLINE_MODE && strcmp(E.statusmsg, "") == 0) {
         bufferAppend(b, "\x1b[7m", 4);    
         char status[80];
         int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
@@ -192,6 +229,16 @@ void bufferAppendRows(buffer *b) {
         bufferAppend(b, "\x1b[m", 3);
     }
 
+    else if (strcmp(E.statusmsg, "") != 0) {
+        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+        bufferAppend(b, "\x1b[92m", 5);
+
+        int msglen = strlen(E.statusmsg);
+        if (msglen > E.screenWidth) msglen = E.screenWidth;
+        bufferAppend(b, E.statusmsg, msglen);
+        bufferAppend(b, "\x1b[m", 3); 
+    }
+
     else {
         bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
 
@@ -231,7 +278,8 @@ void refreshScreen(void) {
     if (E.mode != COMMANDLINE_MODE)
     {
         posY = E.cy - E.rowoff + 1;
-        posX = E.cx - E.coloff + 1;
+        int numwidth = (E.showLineNumbers || E.showRLineNumbers) ? 5 : 0;
+        posX = E.cx - E.coloff + numwidth + 1;
     }
 
     else

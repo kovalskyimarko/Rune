@@ -449,6 +449,10 @@ void processNormalModeKey(int c)
             int tempLenRow = 0;
             int offset = 0;
 
+            if (E.numrows > 0 && E.row[E.cy].len > 0 && E.cx < E.row[E.cy].len) {
+                E.cx++;
+            }
+
             for (int i = 0; i < len; i++)
             {
                 if (E.yankbuff[i] != '\n')
@@ -498,6 +502,7 @@ void processNormalModeKey(int c)
             break;
 
         case ':':
+            E.statusmsg[0] = '\0';
             free(E.lastrow->chars);
             E.lastrow->chars = strdup("");
             E.mode = COMMANDLINE_MODE;
@@ -527,7 +532,6 @@ void porcessVisualModeKey(int c)
             int startX = E.vStartcx;
             int endX =   E.cx;
 
-            int old_cx = E.cx;
             int old_cy = E.cy;
 
             normalize(&startX, &startY, &endX, &endY);
@@ -552,7 +556,7 @@ void porcessVisualModeKey(int c)
                     deleteCharAtCursor();
                 }
 
-                E.cx = old_cx - (endX - startX + 1);
+                E.cx = startX;
                 E.cy = old_cy;
             }
 

@@ -58,22 +58,12 @@ int readKey(void) {
     return c;
 }
 
-
 void showMessageAtCommandLine(const char *s, int len) {
-    if (!E.lastrow) {
-        E.lastrow = malloc(sizeof(erow));
-        E.lastrow->chars = NULL;
-    }
+    memset(E.statusmsg, '\0', sizeof(E.statusmsg));
+    int bytesCopy = (len > 79) ? 79 : len;
 
-    if (E.lastrow->chars) {
-        free(E.lastrow->chars);
-    }
-
-    E.lastrow->chars = malloc(len + 1);
-    if (!E.lastrow->chars) return;
-
-    strcpy(E.lastrow->chars, s);
-    E.lastrow->len = len;
+    memcpy(E.statusmsg, s, bytesCopy);
+    E.statusmsg[bytesCopy] = '\0';
 }
 
 void parseCommand(const char *cmd) {
@@ -156,14 +146,15 @@ void parseCommand(const char *cmd) {
 
         char buf[128];
         snprintf(buf, sizeof(buf),
-            "File: %s, Number of rows: %d, Cursor pos: x: %d, y: %d, size: %s%ld %s%s",
+            "File: %s, Number of rows: %d, Cursor pos: x: %d, y: %d, size: %ld %s%s",
             E.filename ? E.filename : "[No Name]",
             E.numrows,
             E.cx + 1,
             E.cy + 1,
             size == -1 ? 0 : size,
             size == -1 ? "" : "bytes",
-            E.dirty > 0 ? " [ MODIFIED ]" : "");
+            E.dirty > 0 ? " [MODIFIED]" : ""
+        );
 
         showMessageAtCommandLine(buf, strlen(buf));
     }
@@ -208,11 +199,11 @@ void parseCommand(const char *cmd) {
         else
         {
             char *space_ptr = strchr(cmd, ' ');
-            if (*space_ptr != '\0')
+            if (space_ptr != NULL)
             {
                 while (*space_ptr == ' ') space_ptr++;
 
-                if (*space_ptr != NULL)
+                if (*space_ptr != '\0')
                 {
                     char *target_path = expandPath(space_ptr);
                     if (target_path)
@@ -220,6 +211,54 @@ void parseCommand(const char *cmd) {
                         openfile(target_path);
                         free(target_path);
                     }
+                }
+            }
+        }
+    }
+
+    else if (strncmp(cmd, ":set", 4) == 0 && 
+        (cmd[4] == '\0' || cmd[4] == ' '))
+    {
+        char *space_ptr = strchr(cmd, ' ');
+
+        if (space_ptr != NULL)
+        {
+            while (*space_ptr == ' ') space_ptr++;
+
+            if (*space_ptr != '\0')
+            {
+                if ((strncmp(space_ptr, "nu", 2) == 0  && (space_ptr[2] == ' ' || space_ptr[2] == '\0')) || 
+                    ((strncmp(space_ptr, "number", 6) == 0) && (space_ptr[6] == ' ' || space_ptr[6] == '\0')))
+                {
+                    E.showLineNumbers = true;
+                }
+
+                else if ((strncmp(space_ptr, "nonu", 4) == 0  && (space_ptr[4] == ' ' || space_ptr[4] == '\0')) || 
+                    ((strncmp(space_ptr, "nonumber", 8) == 0) && (space_ptr[8] == ' ' || space_ptr[8] == '\0')))
+                {
+                    E.showLineNumbers = false;
+                }
+
+                else if ((strncmp(space_ptr, "number!", 7)) == 0  && (space_ptr[7] == ' ' || space_ptr[7] == '\0'))
+                {
+                    E.showLineNumbers = !E.showLineNumbers;
+                }
+
+                else if ((strncmp(space_ptr, "rnu", 3) == 0  && (space_ptr[3] == ' ' || space_ptr[3] == '\0')) || 
+                    ((strncmp(space_ptr, "relativenumber", 14) == 0) && (space_ptr[14] == ' ' || space_ptr[14] == '\0')))
+                {
+                    E.showRLineNumbers = true;
+                }
+
+                else if ((strncmp(space_ptr, "nornu", 5) == 0  && (space_ptr[5] == ' ' || space_ptr[5] == '\0')) || 
+                    ((strncmp(space_ptr, "norelativenumber", 16) == 0) && (space_ptr[16] == ' ' || space_ptr[16] == '\0')))
+                {
+                    E.showRLineNumbers = false;
+                }
+
+                else if ((strncmp(space_ptr, "relativenumber!", 15)) == 0  && (space_ptr[15] == ' ' || space_ptr[15] == '\0'))
+                {
+                    E.showRLineNumbers = !E.showRLineNumbers;
                 }
             }
         }
@@ -289,13 +328,13 @@ void deleteCharAtCursor(void) {
         memcpy(row->chars + row-> len, nextRow -> chars, nextRow -> len + 1);
         row->len += nextRow->len;
         free(nextRow->chars); 
-        memmove(&E.row[E.cy+1], &E.row[E.cy+2], sizeof(erow) * (E.numrows - E.cy - 1));
+        memmove(&E.row[E.cy+1], &E.row[E.cy+2], sizeof(erow) * (E.numrows - E.cy - 2));
 
         E.numrows--;
         
         return;
     }
-    memmove(&row->chars[E.cx], &row->chars[E.cx + 1], row->len - E.cx+1);
+    memmove(&row->chars[E.cx], &row->chars[E.cx + 1], row->len - E.cx);
     row->len--;
 }
 
@@ -423,7 +462,7 @@ void insertCharAtCommandLine(int c) {
 
 
 void sendCommand(void) {
-    char *cmd_copy = strdup(E.lastrow->chars);
+    parseCommand(E.lastrow->chars);
 
     free(E.lastrow->chars);
     E.lastrow->chars = strdup("");
@@ -431,9 +470,6 @@ void sendCommand(void) {
 
     E.mode = NORMAL_MODE;
     E.cx = E.lastcx;
-
-    parseCommand(cmd_copy);
-    free(cmd_copy);
 }
 
 void processKey(int c) {

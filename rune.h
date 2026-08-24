@@ -74,6 +74,9 @@ struct editorConfig {
     MODES mode;
     erow* row;  /* Pointer to current row*/
     erow* lastrow;
+    char statusmsg[80];
+    bool showLineNumbers;
+    bool showRLineNumbers;
 };
 
 extern struct editorConfig E;
