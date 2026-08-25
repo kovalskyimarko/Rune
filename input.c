@@ -472,6 +472,37 @@ void sendCommand(void) {
     E.cx = E.lastcx;
 }
 
+void find(char* needle)
+{
+    if (E.numrows == 0) return;
+
+    for (int i = 0; i < E.numrows; i++)
+    {
+        int idx = (E.cy + i) % E.numrows;
+        char *startSearch = E.row[idx].chars;
+
+        if (i == 0 && E.cx + 1 < E.row[idx].len) {
+            startSearch+=E.cx+1;
+        } else if (i == 0 && E.cx + 1 >= E.row[idx].len) {
+            continue;
+        }
+
+        char* result = strstr(startSearch, needle);
+
+        if (result != NULL)
+        {
+            E.cx = result - E.row[idx].chars;
+            E.cy = idx;
+            E.mode = NORMAL_MODE;
+            break;
+        }
+    }
+
+    E.mode = NORMAL_MODE;
+    const char* msg = "Pattern not found";
+    showMessageAtCommandLine(msg, strlen(msg));
+}
+
 void processKey(int c) {
     if (c == CTRL_KEY('q'))
     {
@@ -494,7 +525,10 @@ void processKey(int c) {
             processCommandKey(c);
             break;
         case VISUAL_MODE:
-            porcessVisualModeKey(c);
+            processVisualModeKey(c);
+            break;
+        case SEARCH_MODE:
+            processSearchModeKey(c);
             break;
     }
 }

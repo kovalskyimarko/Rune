@@ -45,7 +45,8 @@ typedef enum MODES {
     INSERT_MODE,
     NORMAL_MODE,
     COMMANDLINE_MODE,
-    VISUAL_MODE
+    VISUAL_MODE,
+    SEARCH_MODE
 } MODES;
 
 typedef struct erow {
@@ -92,7 +93,8 @@ void getWindowSize(int *rows, int *cols);
 // input_processkeys.c
 void processCommandKey(int c);
 void processNormalModeKey(int c);
-void porcessVisualModeKey(int c);
+void processVisualModeKey(int c);
+void processSearchModeKey(int c);
 void processBufferKey(int c) ;
 
 // input.c
@@ -107,6 +109,7 @@ void deleteCharAtCursor(void);
 void insertChar(int c);
 void insertString(const char *s, int len);
 int readKey(void);
+void find(char* needle);
 void processKey(int c);
 void insertRowWithText(int at, const char *s, size_t len);
 

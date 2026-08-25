@@ -362,13 +362,10 @@ void copy(void)
 
 }
 
-void processCommandKey(int c) 
+void handleCommandLineButtons(int c)
 {
-    switch (c) {
-        case '\n':
-        case '\r':
-            sendCommand();
-            break;
+    switch (c)
+    {
         case 127:
         case '\b':
             deleteCharBeforeCursorAtCommandLine();
@@ -403,7 +400,54 @@ void processCommandKey(int c)
             E.cx = E.lastcx;
             E.mode = NORMAL_MODE;
             break;
-        
+    }
+}
+
+void processCommandKey(int c) 
+{
+    switch (c) {
+        case '\n':
+        case '\r':
+            sendCommand();
+            break;
+        case 127:
+        case '\b':
+        case '\t':
+        case DEL_KEY:
+        case ARROW_LEFT:
+        case ARROW_RIGHT:
+        case HOME_KEY:
+        case END_KEY:
+        case '\x1b':
+            handleCommandLineButtons(c);
+            break;
+        default:
+            insertCharAtCommandLine(c);
+            break;
+    }
+}
+
+void processSearchModeKey(int c)
+{
+    switch (c)
+    {
+        case '\n':
+        case '\r':
+            if (E.lastrow->chars[0] == '/' && E.lastrow->chars[1] != '\0')
+            {
+                find(E.lastrow->chars + 1);
+            }
+        case 127:
+        case '\b':
+        case '\t':
+        case DEL_KEY:
+        case ARROW_LEFT:
+        case ARROW_RIGHT:
+        case HOME_KEY:
+        case END_KEY:
+        case '\x1b':
+            handleCommandLineButtons(c);
+            break;
         default:
             insertCharAtCommandLine(c);
             break;
@@ -412,6 +456,8 @@ void processCommandKey(int c)
 
 void processNormalModeKey(int c)
 {
+    // After leaving find or sending a command you will always be back at Normal mode so its logical to clear a buffer here
+    E.statusmsg[0] = '\0';
     switch (c)
     {
         case 'i':
@@ -502,7 +548,6 @@ void processNormalModeKey(int c)
             break;
 
         case ':':
-            E.statusmsg[0] = '\0';
             free(E.lastrow->chars);
             E.lastrow->chars = strdup("");
             E.mode = COMMANDLINE_MODE;
@@ -510,10 +555,18 @@ void processNormalModeKey(int c)
             E.cx = 0;
             insertCharAtCommandLine(':');
             break;
+        case '/':
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
+            E.mode = SEARCH_MODE;
+            E.lastcx = E.cx;
+            E.cx = 0;
+            insertCharAtCommandLine('/');
+            break;
     }
 }
 
-void porcessVisualModeKey(int c)
+void processVisualModeKey(int c)
 {
     switch (c)
     {

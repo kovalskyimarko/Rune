@@ -180,8 +180,34 @@ void bufferAppendRows(buffer *b) {
         bufferAppend(b, "\r\n", 2);
     }
 
+    if (E.mode == COMMANDLINE_MODE || E.mode == SEARCH_MODE)
+    {
+        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+
+        if (E.lastrow && E.lastrow->chars) {
+            int cmd_len = E.lastrow->len - E.commandlineColloff;
+
+            if (cmd_len > E.screenWidth)
+                cmd_len = E.screenWidth;
+
+            if (cmd_len < 0) cmd_len = 0;
+
+            bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
+        }
+    }
+
+    else if (strcmp(E.statusmsg, "") != 0)
+    {
+        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+        bufferAppend(b, "\x1b[92m", 5);
+
+        int msglen = strlen(E.statusmsg);
+        if (msglen > E.screenWidth) msglen = E.screenWidth;
+        bufferAppend(b, E.statusmsg, msglen);
+        bufferAppend(b, "\x1b[m", 3); 
+    }
     
-    if (E.mode != COMMANDLINE_MODE && strcmp(E.statusmsg, "") == 0) {
+    else {
         bufferAppend(b, "\x1b[7m", 4);    
         char status[80];
         int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
@@ -228,39 +254,6 @@ void bufferAppendRows(buffer *b) {
 
         bufferAppend(b, "\x1b[m", 3);
     }
-
-    else if (strcmp(E.statusmsg, "") != 0) {
-        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
-        bufferAppend(b, "\x1b[92m", 5);
-
-        int msglen = strlen(E.statusmsg);
-        if (msglen > E.screenWidth) msglen = E.screenWidth;
-        bufferAppend(b, E.statusmsg, msglen);
-        bufferAppend(b, "\x1b[m", 3); 
-    }
-
-    else {
-        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
-
-        if (E.lastrow && E.lastrow->chars) {
-            int cmd_len = E.lastrow->len - E.commandlineColloff;
-
-            if (E.mode != COMMANDLINE_MODE) {
-                bufferAppend(b, "\x1b[92m", 5); 
-            }
-
-            if (cmd_len > E.screenWidth)
-                cmd_len = E.screenWidth;
-
-            if (cmd_len < 0) cmd_len = 0;
-
-            bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
-            
-            if (E.mode != COMMANDLINE_MODE) {
-                bufferAppend(b, "\x1b[m", 3); 
-            }
-        }
-    }
 }
 
 void refreshScreen(void) {
@@ -275,7 +268,7 @@ void refreshScreen(void) {
     int posY;
     int posX;
 
-    if (E.mode != COMMANDLINE_MODE)
+    if ((E.mode != COMMANDLINE_MODE && E.mode != SEARCH_MODE))
     {
         posY = E.cy - E.rowoff + 1;
         int numwidth = (E.showLineNumbers || E.showRLineNumbers) ? 5 : 0;
