@@ -494,7 +494,7 @@ void find(char* needle)
             E.cx = result - E.row[idx].chars;
             E.cy = idx;
             E.mode = NORMAL_MODE;
-            break;
+            return;
         }
     }
 
@@ -522,13 +522,11 @@ void processKey(int c) {
             processNormalModeKey(c);
             break;
         case COMMANDLINE_MODE:
-            processCommandKey(c);
+        case SEARCH_MODE:
+            processLastRowKeys(c);
             break;
         case VISUAL_MODE:
             processVisualModeKey(c);
-            break;
-        case SEARCH_MODE:
-            processSearchModeKey(c);
             break;
     }
 }

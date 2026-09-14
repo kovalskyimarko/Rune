@@ -91,10 +91,9 @@ void enableRawMode(void);
 void getWindowSize(int *rows, int *cols);
 
 // input_processkeys.c
-void processCommandKey(int c);
 void processNormalModeKey(int c);
 void processVisualModeKey(int c);
-void processSearchModeKey(int c);
+void processLastRowKeys(int c);
 void processBufferKey(int c) ;
 
 // input.c
