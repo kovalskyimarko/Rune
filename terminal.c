@@ -46,7 +46,7 @@ void enableRawMode(void) {
 
 void getWindowSize(int *rows, int *cols) {
     struct winsize ws;
-    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
         error("ioctl");
     }
 
