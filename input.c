@@ -532,7 +532,6 @@ void processKey(int c) {
             processNormalModeKey(c);
             break;
         case COMMANDLINE_MODE:
-        case SEARCH_MODE:
             processLastRowKeys(c);
             break;
         case VISUAL_MODE:

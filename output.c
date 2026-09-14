@@ -180,7 +180,7 @@ void bufferAppendRows(buffer *b) {
         bufferAppend(b, "\r\n", 2);
     }
 
-    if (E.mode == COMMANDLINE_MODE || E.mode == SEARCH_MODE)
+    if (E.mode == COMMANDLINE_MODE)
     {
         bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
 
@@ -268,7 +268,7 @@ void refreshScreen(void) {
     int posY;
     int posX;
 
-    if ((E.mode != COMMANDLINE_MODE && E.mode != SEARCH_MODE))
+    if (E.mode != COMMANDLINE_MODE)
     {
         posY = E.cy - E.rowoff + 1;
         int numwidth = (E.showLineNumbers || E.showRLineNumbers) ? 5 : 0;

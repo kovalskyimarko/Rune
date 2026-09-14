@@ -408,8 +408,7 @@ void processLastRowKeys(int c)
             break;
 
         case '\x1b':
-            free(E.lastrow->chars);
-            E.lastrow->chars = strdup("");
+            E.lastrow->chars[0] = '\0';
             E.lastrow->len = 0;
             E.cx = E.lastcx;
             E.mode = NORMAL_MODE;
@@ -516,20 +515,13 @@ void processNormalModeKey(int c)
             break;
 
         case ':':
-            free(E.lastrow->chars);
-            E.lastrow->chars = strdup("");
+        case '/':
+            E.lastrow->chars[0] = '\0';
+            E.lastrow->len = 0;
             E.mode = COMMANDLINE_MODE;
             E.lastcx = E.cx;
             E.cx = 0;
-            insertCharAtCommandLine(':');
-            break;
-        case '/':
-            free(E.lastrow->chars);
-            E.lastrow->chars = strdup("");
-            E.mode = SEARCH_MODE;
-            E.lastcx = E.cx;
-            E.cx = 0;
-            insertCharAtCommandLine('/');
+            insertCharAtCommandLine(c);
             break;
     }
 }
@@ -543,7 +535,7 @@ void processVisualModeKey(int c)
             break;
         }
 
-        case 'd': {
+        case 'd':
         case 'x': {
             copy();
 
@@ -582,7 +574,6 @@ void processVisualModeKey(int c)
             }
 
             break;
-        }
         }
 
         case '0':case'$':

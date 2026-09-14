@@ -45,8 +45,7 @@ typedef enum MODES {
     INSERT_MODE,
     NORMAL_MODE,
     COMMANDLINE_MODE,
-    VISUAL_MODE,
-    SEARCH_MODE
+    VISUAL_MODE
 } MODES;
 
 typedef struct erow {
