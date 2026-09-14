@@ -369,8 +369,24 @@ void splitRow(void) {
 
     if (E.cx > row->len) E.cx = row->len;
 
-    char *right = strdup(row->chars + E.cx);
+        int spaces = 0;
+
+    for (int i = 0; i < row->len; i++)
+    {
+        if (row->chars[i] != ' ')
+        {
+            break;
+        }
+
+        spaces++;
+    }
+
+    char *right = malloc(spaces + (row->len - E.cx) + 1);
+
     if (!right) return;
+
+    memset(right, ' ', spaces);
+    strcpy(right + spaces, row->chars + E.cx);
 
     row->chars[E.cx] = '\0';
     row->len = E.cx;
@@ -381,7 +397,7 @@ void splitRow(void) {
     E.row[E.cy + 1].chars = right;
     E.row[E.cy + 1].len = strlen(right);
     E.cy++;
-    E.cx = 0;
+    E.cx = spaces;
 }
 
 void insertRowWithText(int at, const char *s, size_t len) {
@@ -447,25 +463,21 @@ void insertString(const char *s, int len) {
 }
 
 void insertCharAtCommandLine(int c) {
+    if (E.lastrow->len >= 2046) return;
+
     char ch = (char) c;
-    char* newstr = realloc(E.lastrow->chars, E.lastrow->len + 2);
-    if (!newstr) return;
-    memmove(&newstr[E.cx+1], &newstr[E.cx], (E.lastrow->len - E.cx + 1));
+    memmove(&E.lastrow->chars[E.cx+1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx + 1));
     
-    newstr[E.cx] = ch;
-    
-    E.lastrow->chars = newstr;
+    E.lastrow->chars[E.cx] = ch;
     E.lastrow->len++;
     E.cx++;
-    return;
 }
 
 
 void sendCommand(void) {
     parseCommand(E.lastrow->chars);
 
-    free(E.lastrow->chars);
-    E.lastrow->chars = strdup("");
+    E.lastrow->chars[0] = '\0';
     E.lastrow->len = 0;
 
     E.mode = NORMAL_MODE;
