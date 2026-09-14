@@ -370,7 +370,7 @@ void processLastRowKeys(int c)
         case '\r':
             if (E.lastrow->chars[0] == '/' && E.lastrow->chars[1] != '\0')
             {
-                find(E.lastrow->chars + 1);
+                find(E.lastrow->chars + 1, false);
             }
 
             else if (E.lastrow->chars[0] == ':' && E.lastrow->chars[1] != '\0')
@@ -512,6 +512,24 @@ void processNormalModeKey(int c)
             E.cx = 0;
             E.normalModeMult = 0;
             E.mode = INSERT_MODE;
+            break;
+
+        case 'n':
+            if (E.lastSearch) {
+                find(E.lastSearch, false);
+            } else {
+                const char* msg = "Search buffer is empty";
+                showMessageAtCommandLine(msg, strlen(msg));
+            }
+            break;
+        
+        case 'N':
+            if (E.lastSearch) {
+                find(E.lastSearch, true);
+            } else {
+                const char* msg = "Search buffer is empty";
+                showMessageAtCommandLine(msg, strlen(msg));
+            }
             break;
 
         case ':':

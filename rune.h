@@ -71,6 +71,7 @@ struct editorConfig {
     char *yankbuff;
     char *filepath;
     char *filename;
+    char *lastSearch;
     MODES mode;
     erow* row;  /* Pointer to current row*/
     erow* lastrow;
@@ -107,7 +108,7 @@ void deleteCharAtCursor(void);
 void insertChar(int c);
 void insertString(const char *s, int len);
 int readKey(void);
-void find(char* needle);
+void find(char* needle, bool reverse);
 void processKey(int c);
 void insertRowWithText(int at, const char *s, size_t len);
 

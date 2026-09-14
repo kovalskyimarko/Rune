@@ -20,6 +20,7 @@ void init(void) {
     E.rowoff = 0;
     E.filename = NULL;
     E.filepath = NULL;
+    E.lastSearch = NULL;
     E.mode = INSERT_MODE;
     getWindowSize(&E.screenHeight, &E.screenWidth);
     E.screenHeight-=1; // For the status bar
@@ -54,9 +55,10 @@ void cleanup(void) {
         E.lastrow = NULL;
     }
 
-    if (E.filepath) { free(E.filepath); E.filepath = NULL;}
-    if (E.filename) { free(E.filename); E.filename = NULL;}
-    if (E.yankbuff) { free(E.yankbuff); E.yankbuff = NULL;}
+    if (E.filepath)   { free(E.filepath); E.filepath = NULL;     }
+    if (E.filename)   { free(E.filename); E.filename = NULL;     }
+    if (E.yankbuff)   { free(E.yankbuff); E.yankbuff = NULL;     }
+    if (E.lastSearch) { free(E.lastSearch); E.lastSearch = NULL; }
 }
 
 int main(void) {
