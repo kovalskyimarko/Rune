@@ -3,15 +3,26 @@
 typedef struct buffer {
     char* chars;
     int len;
+    int capacity;
 } buffer;
 
-#define BUFFER_INIT {NULL, 0}
+#define BUFFER_INIT {NULL, 0, 0}
 
 void bufferAppend(buffer *b, const char *s, int slen) {
-    char *newbuf = realloc(b->chars, b->len + slen);
-    if (!newbuf) return;
-    memcpy(&(newbuf[b->len]), s, slen);
-    b->chars = newbuf;
+    if (b->len + slen > b->capacity) {
+        int newCap = (b->capacity == 0) ? 4096 : (b->capacity*2) + slen;
+
+        char *newbuf = realloc(b->chars, newCap);
+        if (!newbuf)
+        {
+            return;
+        }
+
+        b->chars = newbuf;
+        b->capacity = newCap;
+    }
+
+    memcpy(&(b->chars[b->len]), s, slen);
     b->len += slen;
 }
 
@@ -30,12 +41,14 @@ void scroll(void)
         return;
     }
 
+    int numWidth = (E.showLineNumbers || E.showRLineNumbers) ? 5 : 0;
+
     if (E.cx < E.coloff) {
         E.coloff = E.cx;
     }
 
     if (E.cx >= E.coloff + E.screenWidth) {
-       E.coloff = E.cx - E.screenWidth + 1;
+       E.coloff = E.cx - E.screenWidth + 1 + numWidth;
     }
 
     if (E.cy < E.rowoff) {
