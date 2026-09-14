@@ -38,6 +38,7 @@ void editorClearBuffer(void) {
     E.numrows = 0;
     E.cx = 0;
     E.cy = 0;
+    E.lastcx = 0;
 }
 
 void savefile(void) {
@@ -66,7 +67,16 @@ void savefile(void) {
 
 void openfile(const char *fullpath) {
     FILE *fp = fopen(fullpath, "r");
+
+    // If user decides to create new file this will probably return NULL
     if (!fp) {
+        editorClearBuffer();
+        editorSetFilename(fullpath);
+        E.dirty = 0;
+
+        const char* msg = "New file created";
+        showMessageAtCommandLine(msg, strlen(msg));
+
         return;
     }
 
