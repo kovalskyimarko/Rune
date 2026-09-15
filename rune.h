@@ -68,6 +68,7 @@ struct editorConfig {
     int rowoff; /* From what position start rendering the rows*/
     int commandlineColloff;
     int normalModeMult;
+    char pendingAction;
     char *yankbuff;
     char *filepath;
     char *filename;
