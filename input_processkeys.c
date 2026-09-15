@@ -625,10 +625,37 @@ void processBufferKey(int c)
             splitRow();
             break;
         case 127:
-        case '\b':
+        case '\b': {
             if (E.numrows == 0) return;
-            deleteCharBeforeCursor();
+
+            erow* row = &E.row[E.cy];
+            bool onlySpaces = true;
+
+            for (int i = E.cx - 1; i >= 0; i--)
+            {
+
+                if (row->chars[i] != ' ') 
+                {
+                    onlySpaces = false;
+                    break;
+                }
+            }
+
+            if (onlySpaces && E.cx > 0)
+            {
+                int spacesToRemove = (E.cx % 4 != 0) ? (E.cx % 4) : 4;
+
+                for (int i = 0; i < spacesToRemove; i++)
+                {
+                    deleteCharBeforeCursor();
+                }
+            }
+
+            else {
+                deleteCharBeforeCursor();
+            }
             break;
+        }
         case '\t':
             for (int i = 0; i < 4; i++) {
                 insertChar(32);
@@ -654,6 +681,40 @@ void processBufferKey(int c)
         case '\x1b':
             E.mode = NORMAL_MODE;
             break;
+
+        case '}': {
+            if (E.numrows == 0) {
+                insertChar(c);
+                break;
+            }
+
+            erow* row = &E.row[E.cy];
+            bool onlySpaces = true;
+
+            // If user closes the bracket and see letters before it I just assume its something like {code}
+            for (int i = E.cx - 1; i >= 0; i--)
+            {
+
+                if (row->chars[i] != ' ') 
+                {
+                    onlySpaces = false;
+                    break;
+                }
+            }
+
+            if (onlySpaces && E.cx > 0)
+            {
+                int spacesToRemove = (E.cx % 4 != 0) ? (E.cx % 4) : 4;
+
+                for (int i = 0; i < spacesToRemove; i++)
+                {
+                    deleteCharBeforeCursor();
+                }
+            }
+
+            insertChar(c);
+            break;
+        }
         
         default:
             insertChar(c);

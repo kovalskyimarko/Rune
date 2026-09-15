@@ -381,6 +381,18 @@ void splitRow(void) {
         spaces++;
     }
 
+    for (int i = E.cx - 1; i >= 0; i--)
+    {
+        if (row->chars[i] == ' ') continue;
+
+        else if (row->chars[i] == '{') spaces+=4;
+
+        break;
+    }
+
+    if (spaces < 4) spaces = 0;
+    if (spaces % 4 != 0) spaces = spaces - spaces % 4;
+
     char *right = malloc(spaces + (row->len - E.cx) + 1);
 
     if (!right) return;
