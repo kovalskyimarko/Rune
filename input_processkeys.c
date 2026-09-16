@@ -129,39 +129,44 @@ void moveCursorKeyBinds(int c)
 
             if (E.pendingAction == 'd')
             {
-                erow* row = &E.row[E.cy];
-
-                int start = E.cx;
-                int end;
-
-                if (row->chars[E.cx] == ' ')
+                int mult = E.normalModeMult == 0 ? 1 : E.normalModeMult;
+                for (int i = 0; i < mult; i++)
                 {
+                    erow* row = &E.row[E.cy];
+
+                    if (E.cx >= row->len) { E.pendingAction = '\0'; break; }
+
+                    int start = E.cx;
+                    int end;
+
+                    if (row->chars[E.cx] == ' ')
+                    {
+                        while (E.cx < row->len && row->chars[E.cx] == ' ') E.cx++;
+                        
+                        end = E.cx;
+                        
+                        memmove(&row->chars[start], &row->chars[end], row->len - end + 1);
+                        
+                        E.pendingAction = '\0';
+                        row->len -= end-start;
+                        E.cx = start;
+                        E.dirty += end - start;
+
+                        continue;;
+                    }
+
+                    while (E.cx < row->len && row->chars[E.cx] != ' ') E.cx++;
                     while (E.cx < row->len && row->chars[E.cx] == ' ') E.cx++;
                     
                     end = E.cx;
                     
                     memmove(&row->chars[start], &row->chars[end], row->len - end + 1);
-                    
-                    E.pendingAction = '\0';
                     row->len -= end-start;
                     E.cx = start;
                     E.dirty += end - start;
-
-                    break;
                 }
 
-                while (E.cx < row->len && row->chars[E.cx] != ' ') E.cx++;
-                while (E.cx < row->len && row->chars[E.cx] == ' ') E.cx++;
-                
-                end = E.cx;
-                
-                memmove(&row->chars[start], &row->chars[end], row->len - end + 1);
-                
                 E.pendingAction = '\0';
-                row->len -= end-start;
-                E.cx = start;
-                E.dirty += end - start;
-
                 break;
             }
             
@@ -493,6 +498,7 @@ void processNormalModeKey(int c)
             moveCursorKeyBinds(c);
             break;
         
+        case 'P':
         case 'p': {
             if (!E.yankbuff) break;;
 
@@ -500,7 +506,7 @@ void processNormalModeKey(int c)
             int tempLenRow = 0;
             int offset = 0;
 
-            if (E.numrows > 0 && E.row[E.cy].len > 0 && E.cx < E.row[E.cy].len) {
+            if (E.numrows > 0 && E.row[E.cy].len > 0 && E.cx < E.row[E.cy].len && c == 'p') {
                 E.cx++;
             }
 
@@ -542,33 +548,38 @@ void processNormalModeKey(int c)
         case 'd':
             if (E.pendingAction == 'd')
             {
-                if (E.numrows == 0)
+                int mult = E.normalModeMult == 0 ? 1 : E.normalModeMult;
+
+                for (int i = 0; i < mult; i ++)
                 {
-                    break;
-                }
+                    if (E.numrows == 0)
+                    {
+                        break;
+                    }
 
-                erow* row = &E.row[E.cy];
+                    erow* row = &E.row[E.cy];
 
-                if (E.numrows == 1)
-                {
-                    E.dirty += row->len;
-                    free(row->chars);
-                    row->len = 0;
-                    row->chars = strdup("");
-                    E.cx = 0;
-                }
+                    if (E.numrows == 1)
+                    {
+                        E.dirty += row->len;
+                        free(row->chars);
+                        row->len = 0;
+                        row->chars = strdup("");
+                        E.cx = 0;
+                    }
 
-                else
-                {
-                    E.dirty += row->len;
-                    free(row->chars);
-                    memmove(&E.row[E.cy], &E.row[E.cy+1], sizeof(erow) * (E.numrows - E.cy - 1));
-                    E.numrows--;
+                    else
+                    {
+                        E.dirty += row->len;
+                        free(row->chars);
+                        memmove(&E.row[E.cy], &E.row[E.cy+1], sizeof(erow) * (E.numrows - E.cy - 1));
+                        E.numrows--;
 
-                    if (E.cy >= E.numrows)
-                        E.cy = E.numrows-1;
-                    if (E.cx > E.row[E.cy].len)
-                        E.cx = E.row[E.cy].len;
+                        if (E.cy >= E.numrows)
+                            E.cy = E.numrows-1;
+                        if (E.cx > E.row[E.cy].len)
+                            E.cx = E.row[E.cy].len;
+                    }
                 }
 
                 E.pendingAction = '\0';

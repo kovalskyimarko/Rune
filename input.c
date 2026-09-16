@@ -539,13 +539,14 @@ void find(char* needle, bool reverse)
             {
                 E.cx = result - E.row[idx].chars;
                 E.cy = idx;
-                E.mode = NORMAL_MODE;
 
                 if (E.mode == COMMANDLINE_MODE) 
                 {
                     if (E.lastSearch) free(E.lastSearch);
                     E.lastSearch = strdup(E.lastrow->chars + 1);
                 }
+
+                E.mode = NORMAL_MODE;
 
                 E.lastrow->chars[0] = '\0';
                 E.lastrow->len = 0;
@@ -556,12 +557,14 @@ void find(char* needle, bool reverse)
         if (reverse)
         {
             char *last = NULL;
-            char *curr = strstr(startSearch, needle);
+            char *curr = NULL;
 
             if (i == E.numrows)
             {
                 char tempChar = startSearch[E.cx];
                 startSearch[E.cx] = '\0';
+
+                curr = strstr(startSearch, needle);
 
                 while (curr != NULL)
                 {
@@ -574,6 +577,8 @@ void find(char* needle, bool reverse)
 
             else
             {
+                curr = strstr(startSearch, needle);
+
                 while (curr != NULL)
                 {
                     last = curr;
@@ -585,13 +590,14 @@ void find(char* needle, bool reverse)
             {
                 E.cx = last - E.row[idx].chars;
                 E.cy = idx;
-                E.mode = NORMAL_MODE;
 
                 if (E.mode == COMMANDLINE_MODE) 
                 {
                     if (E.lastSearch) free(E.lastSearch);
                     E.lastSearch = strdup(E.lastrow->chars + 1);
                 }
+
+                E.mode = NORMAL_MODE;
 
                 E.lastrow->chars[0] = '\0';
                 E.lastrow->len = 0;
