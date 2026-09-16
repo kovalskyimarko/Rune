@@ -773,9 +773,20 @@ void processBufferKey(int c)
             E.mode = NORMAL_MODE;
             break;
 
+        case '{':
+            insertChar(c);
+            insertChar('}');
+            E.cx--;
+            break;
+
         case '}': {
             if (E.numrows == 0) {
                 insertChar(c);
+                break;
+            } 
+            else if (E.row[E.cy].chars[E.cx] == '}')
+            {
+                E.cx++;
                 break;
             }
 
@@ -806,6 +817,60 @@ void processBufferKey(int c)
             insertChar(c);
             break;
         }
+        
+        case '(':
+            insertChar(c);
+            insertChar(')');
+            E.cx--;
+            break;
+        
+        case ')':
+            if (E.numrows != 0)
+            {
+                if (E.row[E.cy].chars[E.cx] == ')') 
+                {
+                    E.cx++;
+                    break;
+                }
+            }
+
+            insertChar(')');
+            break;
+
+        case '[':
+            insertChar(c);
+            insertChar(']');
+            E.cx--;
+            break;
+        
+        case ']':
+            if (E.numrows != 0)
+            {
+                if (E.row[E.cy].chars[E.cx] == ']') 
+                {
+                    E.cx++;
+                    break;
+                }
+            }
+
+            insertChar(']');
+            break;
+
+        case '\'':
+        case '"':
+            if (E.numrows != 0)
+            {
+                if (E.row[E.cy].chars[E.cx] == c) 
+                {
+                    E.cx++;
+                    break;
+                }
+            }
+
+            insertChar(c);
+            insertChar(c);
+            E.cx--;
+            break;
         
         default:
             insertChar(c);
