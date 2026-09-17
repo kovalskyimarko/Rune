@@ -193,12 +193,60 @@ void moveCursorKeyBinds(int c)
                         E.cy++;
                         E.cx = 0;
                     }
+
+                    else
+                    {
+                        break;
+                    }
                 }
             }
 
             E.normalModeMult = 0;
             break;
         }
+
+        case 'e':
+            if (E.numrows == 0) break;
+
+            int times = (E.normalModeMult == 0) ? 1 : E.normalModeMult;
+
+            for (int i = 0; i < times; i++)
+            {
+                if (E.cx < E.row[E.cy].len - 1) E.cx++;
+
+                else
+                {
+                    if (E.cy < E.numrows - 1)
+                    {
+                        E.cy++;
+                        E.cx = 0;
+                    }
+
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                while (E.cx >= E.row[E.cy].len || E.row[E.cy].chars[E.cx] == ' ') {
+                    if (E.cx >= E.row[E.cy].len) {
+                        if (E.cy < E.numrows - 1) {
+                            E.cy++;
+                            E.cx = 0;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        E.cx++;
+                    }
+                }
+
+                while (E.cx < E.row[E.cy].len - 1 && E.row[E.cy].chars[E.cx] != ' ' && E.row[E.cy].chars[E.cx + 1] != ' ') E.cx++;
+            }
+
+            E.normalModeMult = 0;
+
+            break;
 
         case 'b': {
             if (E.numrows == 0) break;
@@ -217,19 +265,27 @@ void moveCursorKeyBinds(int c)
                     E.cx--;
                 }
 
-                while (E.cx > 0 && E.row[E.cy].chars[E.cx] == ' ')
+                while (E.cx < 0 || E.row[E.cy].chars[E.cx] == ' ')
                 {
-                    E.cx--;
+                    if (E.cx <= 0)
+                    {
+                        if (E.cy > 0)
+                        {
+                            E.cy--;
+                            E.cx = E.row[E.cy].len;
+                        } else
+                        {
+                            break;
+                        }
+                    } else
+                    {
+                        E.cx--;
+                    }
                 }
 
-                while (E.cx > 0 && E.row[E.cy].chars[E.cx] != ' ')
+                while (E.cx > 0 && E.row[E.cy].chars[E.cx] != ' ' && E.row[E.cy].chars[E.cx -  1] != ' ')
                 {
                     E.cx--;
-                }
-
-                if (E.cx != 0)
-                {
-                    E.cx++;
                 }
             }
 
@@ -493,7 +549,7 @@ void processNormalModeKey(int c)
         case '0':case'$':
         case '1': case '2': case '3': case '4': case '5':
         case '6': case '7': case '8': case '9':
-        case 'w': case 'b':
+        case 'w': case 'e': case 'b':
         case 'h': case 'j': case 'k': case 'l':
             moveCursorKeyBinds(c);
             break;
@@ -599,10 +655,23 @@ void processNormalModeKey(int c)
             E.mode = INSERT_MODE;
             break;
 
+        case '^':
         case 'I':
-            E.cx = 0;
+            if (E.numrows == 0 ) return;
+
+            erow* row = &E.row[E.cy];
+
+            for (E.cx = 0; E.cx < row->len; E.cx++)
+            {
+                if (row->chars[E.cx] != ' ')
+                {
+                    break;
+                }
+            }
+
             E.normalModeMult = 0;
-            E.mode = INSERT_MODE;
+            if (c == 'I')
+                E.mode = INSERT_MODE;
             break;
 
         case 'n':

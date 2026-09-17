@@ -365,6 +365,12 @@ void insertRow(int at) {
 }
 
 void splitRow(void) {
+    if (E.numrows == 0)
+    {
+        insertRow(E.cy);
+        return;
+    }
+
     erow *row = &E.row[E.cy];
 
     if (E.cx > row->len) E.cx = row->len;
