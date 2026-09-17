@@ -381,11 +381,24 @@ void splitRow(void) {
         spaces++;
     }
 
+    bool hasTextBefore = false;
+
     for (int i = E.cx - 1; i >= 0; i--)
     {
         if (row->chars[i] == ' ') continue;
 
-        else if (row->chars[i] == '{') spaces+=4;
+        hasTextBefore = true;
+
+        if (row->chars[i] == '{') spaces+=4;
+
+        break;
+    }
+
+    for (int i = E.cx; i < row->len; i++)
+    {
+        if (row->chars[i] == ' ') continue;
+
+        else if (row->chars[i] == '}' && hasTextBefore) spaces-=4;
 
         break;
     }
