@@ -656,7 +656,7 @@ void processNormalModeKey(int c)
             break;
 
         case '^':
-        case 'I':
+        case 'I': {
             if (E.numrows == 0 ) return;
 
             erow* row = &E.row[E.cy];
@@ -673,6 +673,32 @@ void processNormalModeKey(int c)
             if (c == 'I')
                 E.mode = INSERT_MODE;
             break;
+        }
+
+        case 'f': {
+            if (E.numrows == 0) break;
+
+            int charToFind = readKey();
+
+            if (charToFind == '\x1b') break;
+
+            erow* row = &E.row[E.cy];
+            int mult = E.normalModeMult == 0 ? 1 : E.normalModeMult;
+            int found = 0;
+
+            for (int i = E.cx+1; i < row->len; i++)
+            {
+                if (row->chars[i] == charToFind) found++;
+
+                if (found == mult) 
+                {
+                    E.cx = i;
+                    break;
+                }
+            }
+
+            break;
+        }
 
         case 'n':
             if (E.lastSearch) {
