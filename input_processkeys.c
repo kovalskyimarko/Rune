@@ -172,21 +172,9 @@ void moveCursorKeyBinds(int c)
             
             int times = (E.normalModeMult == 0) ? 1 : E.normalModeMult;
             for (int i = 0; i < times; i++) {
-                bool seenSpace = false;
-                while (E.cx < E.row[E.cy].len)
-                {
-                    if (E.row[E.cy].chars[E.cx] == ' ')
-                    {
-                        seenSpace = true;
-                    } else if (seenSpace == true)
-                    {
-                        break;
-                    }
+                if (E.cx < E.row[E.cy].len) E.cx++;
 
-                    E.cx++;
-                }
-
-                if (E.cx >= E.row[E.cy].len)
+                else 
                 {
                     if (E.cy < E.numrows - 1)
                     {
@@ -197,6 +185,23 @@ void moveCursorKeyBinds(int c)
                     else
                     {
                         break;
+                    }
+                }
+
+                while (E.cx < E.row[E.cy].len && E.row[E.cy].chars[E.cx] != ' ') {
+                    E.cx++;
+                }
+
+                while (E.cx >= E.row[E.cy].len || E.row[E.cy].chars[E.cx] == ' ') {
+                    if (E.cx >= E.row[E.cy].len) {
+                        if (E.cy < E.numrows - 1) {
+                            E.cy++;
+                            E.cx = 0;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        E.cx++;
                     }
                 }
             }
@@ -212,7 +217,7 @@ void moveCursorKeyBinds(int c)
 
             for (int i = 0; i < times; i++)
             {
-                if (E.cx < E.row[E.cy].len - 1) E.cx++;
+                if (E.cx < E.row[E.cy].len) E.cx++;
 
                 else
                 {
