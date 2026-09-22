@@ -271,36 +271,71 @@ void parseCommand(const char *cmd) {
     }
 }
 
-void deleteCharBeforeCursor(void) {
+void deleteChar(int x, int y)
+{
+    if (y < 0 || y >= E.numrows) return;
+
+    erow* row = &E.row[y];
+
+    if (x < 0 || x >= row->len) return;
+
+    memmove(&row->chars[x], &row->chars[x+1], (row->len - x+1));
+    row->len--;
     E.dirty++;
+}
+
+void mergeLines(int lineToDeleteY, int lineToMergeWithY)
+{
+    if (lineToDeleteY < 0 || lineToDeleteY >= E.numrows) return;
+    if (lineToMergeWithY < 0 || lineToMergeWithY >= E.numrows) return;
+
+    erow* lineToDel = &E.row[lineToDeleteY];
+    erow* lineToMerge = &E.row[lineToMergeWithY];
+
+    char *tmp = realloc(lineToMerge->chars, lineToMerge->len + lineToDel->len + 1);
+    if (!tmp) return;
+
+    lineToMerge->chars = tmp;
+    memcpy(lineToMerge->chars + lineToMerge->len, lineToDel->chars, lineToDel->len + 1);
+    lineToMerge->len += lineToDel->len;
+
+    free(lineToDel->chars);
+
+    memmove(&E.row[lineToDeleteY], &E.row[lineToDeleteY + 1], sizeof(erow) * (E.numrows - lineToDeleteY - 1));
+
+    E.numrows--;
+    E.dirty++;
+}
+
+void deleteCharBeforeCursor(void) {
     if (E.cx == 0) {
         if (E.cy == 0) return;
 
-        erow *row = &E.row[E.cy];
-        erow *prev = &E.row[E.cy - 1];
-
-        char *tmp = realloc(prev->chars, prev->len + row->len + 1);
-        if (!tmp) return;
-        prev->chars = tmp;
-        memcpy(prev->chars + prev->len, row->chars, row->len + 1);
-        E.cx = prev->len;
-        prev->len += row->len;
-
-        free(row->chars);
-
-        memmove(&E.row[E.cy], &E.row[E.cy + 1],
-            sizeof(erow) * (E.numrows - E.cy - 1));
-
-        E.numrows--;
+        int newCursorX = E.row[E.cy - 1].len;
+        mergeLines(E.cy, E.cy - 1);
         E.cy--;
+        E.cx = newCursorX;
 
         return;
     }
 
-    erow *row = &E.row[E.cy];
-    memmove(&row->chars[E.cx-1], &row->chars[E.cx], (row->len - E.cx+1));
+    deleteChar(E.cx-1, E.cy);
     E.cx--;
-    row->len--;
+}
+
+void deleteCharAtCursor(void) {
+    erow *row = &E.row[E.cy];
+
+    if (E.cx < 0 || E.cx > row->len) return;
+    if (E.cx == row->len) {
+        if (E.cy + 1 == E.numrows) return;
+        
+        mergeLines(E.cy + 1, E.cy);
+
+        return;
+    }
+    
+    deleteChar(E.cx, E.cy);
 }
 
 void deleteCharBeforeCursorAtCommandLine(void) 
@@ -310,32 +345,6 @@ void deleteCharBeforeCursorAtCommandLine(void)
     E.cx--;
     E.lastrow->len--;
     return;
-}
-
-
-void deleteCharAtCursor(void) {
-    E.dirty++;
-    erow *row = &E.row[E.cy];
-
-    if (E.cx < 0 || E.cx > row->len) return;
-    if (E.cx == row->len) {
-        if (E.cy + 1 == E.numrows) return;    
-        
-        erow *nextRow = &E.row[E.cy+1];
-        char *tmp = realloc(row->chars, row->len + nextRow->len + 1);
-        if (!tmp) return;
-        row->chars = tmp;
-        memcpy(row->chars + row-> len, nextRow -> chars, nextRow -> len + 1);
-        row->len += nextRow->len;
-        free(nextRow->chars); 
-        memmove(&E.row[E.cy+1], &E.row[E.cy+2], sizeof(erow) * (E.numrows - E.cy - 2));
-
-        E.numrows--;
-        
-        return;
-    }
-    memmove(&row->chars[E.cx], &row->chars[E.cx + 1], row->len - E.cx);
-    row->len--;
 }
 
 void deleteCharAtCursorAtCommandLine(void) {
