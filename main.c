@@ -25,7 +25,7 @@ void init(void) {
     getWindowSize(&E.screenHeight, &E.screenWidth);
     E.screenHeight-=1; // For the status bar
     E.lastrow = malloc(sizeof(erow));
-    E.lastrow->chars = malloc(2048);
+    E.lastrow->chars = strdup("");
     E.lastrow->chars[0] = '\0';
     E.lastrow->len = 0;
     E.statusmsg[0] = '\0';

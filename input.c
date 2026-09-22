@@ -348,10 +348,10 @@ void deleteCharBeforeCursorAtCommandLine(void)
 }
 
 void deleteCharAtCursorAtCommandLine(void) {
-        if (E.cx == E.lastrow->len) return;
-        memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);
-        E.lastrow->len--;
-        return;
+    if (E.cx == E.lastrow->len) return;
+    memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);
+    E.lastrow->len--;
+    return;
 }
 
 void insertRow(int at) {
@@ -456,68 +456,54 @@ void insertRowWithText(int at, const char *s, size_t len) {
     row->len = len;
 }
 
-
-void insertChar(int c) {
-    E.dirty++;
-    if (E.numrows == 0) {
-        insertRow(0);
-    }
-
-    erow* row = &E.row[E.cy];
-    if (E.cx < 0) E.cx = 0;
-    if (E.cx > row->len) E.cx = row->len;
-    char ch = (char)c;
-
-    char* newstr = realloc(row->chars, row->len + 2);
-    if (!newstr) return;
-    memmove(&newstr[E.cx+1], &newstr[E.cx], (row->len - E.cx + 1));
-    
-    newstr[E.cx] = ch;
-    
-    row->chars = newstr;
-    row->len++;
-    E.cx++;
-}
-
-void insertString(const char *s, int len) {
-    E.dirty+=len;
-    if (E.numrows == 0) {
-        insertRow(0);
-    }
-
-    erow* row = &E.row[E.cy];
-
-    if (E.cx < 0) E.cx = 0;
-    if (E.cx > row->len) E.cx = row->len;
+void baseInsertString(const char* s, int len, erow* row, int x)
+{
+    if (x < 0) x = 0;
+    if (x > row->len) x = row->len;
 
     char* newstr = realloc(row->chars, row->len + len + 1);
     if (!newstr) return;
 
-    memmove(&newstr[E.cx + len], &newstr[E.cx], row->len - E.cx + 1);
+    memmove(&newstr[x + len], &newstr[x], row->len - x + 1);
 
-    memcpy(&newstr[E.cx], s, len);
+    memcpy(&newstr[x], s, len);
 
     row->chars = newstr;
     row->len += len;
+}
+
+void insertString(const char *s, int len) {
+    if (E.numrows == 0) {
+        insertRow(0);
+    }
+
+    erow* row = &E.row[E.cy];
+
+    baseInsertString(s, len, row, E.cx);
+
     E.cx += len;
+    E.dirty+=len;
+}
+
+void insertChar(int c) {
+    char ch = (char) c;
+
+    insertString(&ch, 1);
 }
 
 void insertCharAtCommandLine(int c) {
-    if (E.lastrow->len >= 2046) return;
-
     char ch = (char) c;
-    memmove(&E.lastrow->chars[E.cx+1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx + 1));
     
-    E.lastrow->chars[E.cx] = ch;
-    E.lastrow->len++;
+    baseInsertString(&ch, 1, E.lastrow E.cx);
+
     E.cx++;
 }
-
 
 void sendCommand(void) {
     parseCommand(E.lastrow->chars);
 
-    E.lastrow->chars[0] = '\0';
+    free(E.lastrow->chars);
+    E.lastrow->chars = strdup("");
     E.lastrow->len = 0;
 
     E.mode = NORMAL_MODE;
@@ -576,7 +562,8 @@ void find(char* needle, bool reverse)
 
                 E.mode = NORMAL_MODE;
 
-                E.lastrow->chars[0] = '\0';
+                free(E.lastrow->chars);
+                E.lastrow->chars = strdup("");
                 E.lastrow->len = 0;
                 return;
             }
@@ -627,7 +614,8 @@ void find(char* needle, bool reverse)
 
                 E.mode = NORMAL_MODE;
 
-                E.lastrow->chars[0] = '\0';
+                free(E.lastrow->chars);
+                E.lastrow->chars = strdup("");
                 E.lastrow->len = 0;
                 return;
             }
@@ -646,7 +634,8 @@ void find(char* needle, bool reverse)
         }        
     }
 
-    E.lastrow->chars[0] = '\0';
+    free(E.lastrow->chars);
+    E.lastrow->chars = strdup("");
     E.lastrow->len = 0;
 
     if (E.mode == COMMANDLINE_MODE)

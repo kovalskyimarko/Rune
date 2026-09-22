@@ -507,7 +507,8 @@ void processLastRowKeys(int c)
             break;
 
         case '\x1b':
-            E.lastrow->chars[0] = '\0';
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
             E.cx = E.lastcx;
             E.mode = NORMAL_MODE;
@@ -720,7 +721,8 @@ void processNormalModeKey(int c)
 
         case ':':
         case '/':
-            E.lastrow->chars[0] = '\0';
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
             E.mode = COMMANDLINE_MODE;
             E.lastcx = E.cx;
