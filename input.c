@@ -66,6 +66,18 @@ void showMessageAtCommandLine(const char *s, int len) {
     E.statusmsg[bytesCopy] = '\0';
 }
 
+char* getCommandArg(const char *cmd)
+{
+    char *space_ptr = strchr(cmd, ' ');
+    if (space_ptr != NULL) {
+        while (*space_ptr == ' ') space_ptr++;
+
+        if (*space_ptr != '\0') return space_ptr;
+    }
+    
+    return NULL;
+}
+
 void parseCommand(const char *cmd) {
     while (*cmd == ' ') cmd++;
 
@@ -93,18 +105,14 @@ void parseCommand(const char *cmd) {
     else if((strncmp(cmd, ":wq", 3) == 0 && (cmd[3] == '\0' || cmd[3] == ' ')) || 
         (strncmp(cmd, ":x", 2) == 0&& (cmd[2] == '\0' || cmd[2] == ' '))) {
 
-        char *space_ptr = strchr(cmd, ' ');
+        char* arg = getCommandArg(cmd);
 
-        if (space_ptr != NULL) {
-            while (*space_ptr == ' ') space_ptr++;
-
-            if (*space_ptr != '\0') {
-                char *target_path = expandPath(space_ptr);
-                if (target_path)
-                {
-                    editorSetFilename(target_path);
-                    free(target_path);
-                }
+        if (arg != NULL) {
+            char *target_path = expandPath(arg);
+            if (target_path)
+            {
+                editorSetFilename(target_path);
+                free(target_path);
             }
         }
 
@@ -162,18 +170,15 @@ void parseCommand(const char *cmd) {
     else if (strncmp(cmd, ":w", 2) == 0 &&
         (cmd[2] == '\0' || cmd[2] == ' ')) {
 
-        char *space_ptr = strchr(cmd, ' ');
+        char* arg = getCommandArg(cmd);
 
-        if (space_ptr != NULL) {
-            while (*space_ptr == ' ') space_ptr++;
-
-            if (*space_ptr != '\0') {
-                char *target_path = expandPath(space_ptr);
-                if (target_path)
-                {
-                    editorSetFilename(target_path);
-                    free(target_path);
-                }
+        if (arg != NULL)
+        {
+            char *target_path = expandPath(arg);
+            if (target_path)
+            {
+                editorSetFilename(target_path);
+                free(target_path);
             }
         }
 
@@ -198,19 +203,15 @@ void parseCommand(const char *cmd) {
 
         else
         {
-            char *space_ptr = strchr(cmd, ' ');
-            if (space_ptr != NULL)
-            {
-                while (*space_ptr == ' ') space_ptr++;
+            char* arg = getCommandArg(cmd);
 
-                if (*space_ptr != '\0')
+            if (arg != NULL)
+            {
+                char *target_path = expandPath(arg);
+                if (target_path)
                 {
-                    char *target_path = expandPath(space_ptr);
-                    if (target_path)
-                    {
-                        openfile(target_path);
-                        free(target_path);
-                    }
+                    openfile(target_path);
+                    free(target_path);
                 }
             }
         }
@@ -219,47 +220,42 @@ void parseCommand(const char *cmd) {
     else if (strncmp(cmd, ":set", 4) == 0 && 
         (cmd[4] == '\0' || cmd[4] == ' '))
     {
-        char *space_ptr = strchr(cmd, ' ');
+        char* arg = getCommandArg(cmd);
 
-        if (space_ptr != NULL)
+        if (arg != NULL)
         {
-            while (*space_ptr == ' ') space_ptr++;
-
-            if (*space_ptr != '\0')
+            if ((strncmp(arg, "nu", 2) == 0  && (arg[2] == ' ' || arg[2] == '\0')) || 
+                ((strncmp(arg, "number", 6) == 0) && (arg[6] == ' ' || arg[6] == '\0')))
             {
-                if ((strncmp(space_ptr, "nu", 2) == 0  && (space_ptr[2] == ' ' || space_ptr[2] == '\0')) || 
-                    ((strncmp(space_ptr, "number", 6) == 0) && (space_ptr[6] == ' ' || space_ptr[6] == '\0')))
-                {
-                    E.showLineNumbers = true;
-                }
+                E.showLineNumbers = true;
+            }
 
-                else if ((strncmp(space_ptr, "nonu", 4) == 0  && (space_ptr[4] == ' ' || space_ptr[4] == '\0')) || 
-                    ((strncmp(space_ptr, "nonumber", 8) == 0) && (space_ptr[8] == ' ' || space_ptr[8] == '\0')))
-                {
-                    E.showLineNumbers = false;
-                }
+            else if ((strncmp(arg, "nonu", 4) == 0  && (arg[4] == ' ' || arg[4] == '\0')) || 
+                ((strncmp(arg, "nonumber", 8) == 0) && (arg[8] == ' ' || arg[8] == '\0')))
+            {
+                E.showLineNumbers = false;
+            }
 
-                else if ((strncmp(space_ptr, "number!", 7)) == 0  && (space_ptr[7] == ' ' || space_ptr[7] == '\0'))
-                {
-                    E.showLineNumbers = !E.showLineNumbers;
-                }
+            else if ((strncmp(arg, "number!", 7)) == 0  && (arg[7] == ' ' || arg[7] == '\0'))
+            {
+                E.showLineNumbers = !E.showLineNumbers;
+            }
 
-                else if ((strncmp(space_ptr, "rnu", 3) == 0  && (space_ptr[3] == ' ' || space_ptr[3] == '\0')) || 
-                    ((strncmp(space_ptr, "relativenumber", 14) == 0) && (space_ptr[14] == ' ' || space_ptr[14] == '\0')))
-                {
-                    E.showRLineNumbers = true;
-                }
+            else if ((strncmp(arg, "rnu", 3) == 0  && (arg[3] == ' ' || arg[3] == '\0')) || 
+                ((strncmp(arg, "relativenumber", 14) == 0) && (arg[14] == ' ' || arg[14] == '\0')))
+            {
+                E.showRLineNumbers = true;
+            }
 
-                else if ((strncmp(space_ptr, "nornu", 5) == 0  && (space_ptr[5] == ' ' || space_ptr[5] == '\0')) || 
-                    ((strncmp(space_ptr, "norelativenumber", 16) == 0) && (space_ptr[16] == ' ' || space_ptr[16] == '\0')))
-                {
-                    E.showRLineNumbers = false;
-                }
+            else if ((strncmp(arg, "nornu", 5) == 0  && (arg[5] == ' ' || arg[5] == '\0')) || 
+                ((strncmp(arg, "norelativenumber", 16) == 0) && (arg[16] == ' ' || arg[16] == '\0')))
+            {
+                E.showRLineNumbers = false;
+            }
 
-                else if ((strncmp(space_ptr, "relativenumber!", 15)) == 0  && (space_ptr[15] == ' ' || space_ptr[15] == '\0'))
-                {
-                    E.showRLineNumbers = !E.showRLineNumbers;
-                }
+            else if ((strncmp(arg, "relativenumber!", 15)) == 0  && (arg[15] == ' ' || arg[15] == '\0'))
+            {
+                E.showRLineNumbers = !E.showRLineNumbers;
             }
         }
     }
@@ -271,17 +267,12 @@ void parseCommand(const char *cmd) {
     }
 }
 
-void deleteChar(int x, int y)
+void baseDeleteChar(int x, erow* row)
 {
-    if (y < 0 || y >= E.numrows) return;
-
-    erow* row = &E.row[y];
-
     if (x < 0 || x >= row->len) return;
 
-    memmove(&row->chars[x], &row->chars[x+1], (row->len - x+1));
+    memmove(&row->chars[x], &row->chars[x+1], (row->len - x));
     row->len--;
-    E.dirty++;
 }
 
 void mergeLines(int lineToDeleteY, int lineToMergeWithY)
@@ -304,7 +295,6 @@ void mergeLines(int lineToDeleteY, int lineToMergeWithY)
     memmove(&E.row[lineToDeleteY], &E.row[lineToDeleteY + 1], sizeof(erow) * (E.numrows - lineToDeleteY - 1));
 
     E.numrows--;
-    E.dirty++;
 }
 
 void deleteCharBeforeCursor(void) {
@@ -316,10 +306,12 @@ void deleteCharBeforeCursor(void) {
         E.cy--;
         E.cx = newCursorX;
 
+        E.dirty++;
         return;
     }
 
-    deleteChar(E.cx-1, E.cy);
+    baseDeleteChar(E.cx-1, &E.row[E.cy]);
+    E.dirty++;
     E.cx--;
 }
 
@@ -332,25 +324,22 @@ void deleteCharAtCursor(void) {
         
         mergeLines(E.cy + 1, E.cy);
 
+        E.dirty++;
         return;
     }
     
-    deleteChar(E.cx, E.cy);
+    baseDeleteChar(E.cx, &E.row[E.cy]);
+    E.dirty++;
 }
 
 void deleteCharBeforeCursorAtCommandLine(void) 
 {
-    if (E.cx == 0) return;
-    memmove(&E.lastrow->chars[E.cx-1], &E.lastrow->chars[E.cx], (E.lastrow->len - E.cx+1));
+    baseDeleteChar(E.cx - 1, E.lastrow);
     E.cx--;
-    E.lastrow->len--;
-    return;
 }
 
 void deleteCharAtCursorAtCommandLine(void) {
-    if (E.cx == E.lastrow->len) return;
-    memmove(&E.lastrow->chars[E.cx], &E.lastrow->chars[E.cx + 1], E.lastrow->len - E.cx+1);
-    E.lastrow->len--;
+    baseDeleteChar(E.cx, E.lastrow);
     return;
 }
 
@@ -494,7 +483,7 @@ void insertChar(int c) {
 void insertCharAtCommandLine(int c) {
     char ch = (char) c;
     
-    baseInsertString(&ch, 1, E.lastrow E.cx);
+    baseInsertString(&ch, 1, E.lastrow, E.cx);
 
     E.cx++;
 }
