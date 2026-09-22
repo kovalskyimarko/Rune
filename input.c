@@ -499,141 +499,141 @@ void sendCommand(void) {
     E.cx = E.lastcx;
 }
 
+char* baseNextFind(char* needle, int x, int y, int offset, int *res_idx)
+{
+    for (int i = 0; i < E.numrows; i++)
+    {
+        int idx = (y + i) % E.numrows;
+        char *startSearch = E.row[idx].chars;
+
+        if (offset == 1)
+        {
+            if (i == 0 && x + 1 < E.row[idx].len) {
+                startSearch+=x + offset;
+            } else if (i == 0 && x + 1 >= E.row[idx].len) {
+                continue;
+            }
+        }
+
+        char* result = strstr(startSearch, needle);
+
+        if (result != NULL) 
+        {
+            *res_idx = idx;
+            return result;
+        }
+    }
+
+    return NULL;
+}
+
+char* baseReverseFind(char* needle, int x, int y, int *res_idx)
+{
+    for (int i = E.numrows; i > 0; i--)
+    {
+        int idx = (y + i) % E.numrows;
+        char *startSearch = E.row[idx].chars;
+
+        if (i == E.numrows && x - 1 < 0)
+        {
+            continue;
+        }
+
+        char *last = NULL;
+        char *curr = NULL;
+
+        if (i == E.numrows)
+        {
+            char tempChar = startSearch[x];
+            startSearch[x] = '\0';
+
+            curr = strstr(startSearch, needle);
+
+            while (curr != NULL)
+            {
+                last = curr;
+                curr = strstr(curr + 1, needle);
+            }
+
+            startSearch[x] = tempChar;
+        }
+
+        else
+        {
+            curr = strstr(startSearch, needle);
+
+            while (curr != NULL)
+            {
+                last = curr;
+                curr = strstr(curr + 1, needle);
+            }
+        }
+
+        if (last != NULL) 
+        {
+            *res_idx = idx;
+            return last;
+        }
+    }
+
+    return NULL;
+}
+
 void find(char* needle, bool reverse)
 {
     if (E.numrows == 0) return;
 
     int realcx = (E.mode == COMMANDLINE_MODE) ? E.lastcx : E.cx;
-    int offset = 0;
+    int foundY = -1;
 
-    if (E.mode == NORMAL_MODE)
+    char* result = NULL;
+    if (reverse)
     {
-        offset = reverse == false ? 1 : -1;
+        result = baseReverseFind(needle, realcx, E.cy, &foundY);
     }
 
-    int i = reverse == false ? 0 : E.numrows;
-    int limit = reverse == false ? E.numrows : 0;
-
-    while (true)
+    else
     {
-        int idx = (E.cy + i) % E.numrows;
-        char *startSearch = E.row[idx].chars;
-
-        if (offset == 1)
+        if (E.mode == NORMAL_MODE)
         {
-            if (i == 0 && realcx + 1 < E.row[idx].len) {
-                startSearch+=realcx + offset;
-            } else if (i == 0 && realcx + 1 >= E.row[idx].len) {
-                i++;
-                continue;
-            }
-        }
-        else if (offset == -1 && i == E.numrows && realcx - 1 < 0) 
-        {
-            i--;
-            continue;
-        }
-
-        if (!reverse)
-        {
-            char* result = strstr(startSearch, needle);
-
-            if (result != NULL)
-            {
-                E.cx = result - E.row[idx].chars;
-                E.cy = idx;
-
-                if (E.mode == COMMANDLINE_MODE) 
-                {
-                    if (E.lastSearch) free(E.lastSearch);
-                    E.lastSearch = strdup(E.lastrow->chars + 1);
-                }
-
-                E.mode = NORMAL_MODE;
-
-                free(E.lastrow->chars);
-                E.lastrow->chars = strdup("");
-                E.lastrow->len = 0;
-                return;
-            }
-        }
-
-        if (reverse)
-        {
-            char *last = NULL;
-            char *curr = NULL;
-
-            if (i == E.numrows)
-            {
-                char tempChar = startSearch[E.cx];
-                startSearch[E.cx] = '\0';
-
-                curr = strstr(startSearch, needle);
-
-                while (curr != NULL)
-                {
-                    last = curr;
-                    curr = strstr(curr + 1, needle);
-                }
-
-                startSearch[E.cx] = tempChar;
-            }
-
-            else
-            {
-                curr = strstr(startSearch, needle);
-
-                while (curr != NULL)
-                {
-                    last = curr;
-                    curr = strstr(curr + 1, needle);
-                }
-            }
-
-            if (last != NULL)
-            {
-                E.cx = last - E.row[idx].chars;
-                E.cy = idx;
-
-                if (E.mode == COMMANDLINE_MODE) 
-                {
-                    if (E.lastSearch) free(E.lastSearch);
-                    E.lastSearch = strdup(E.lastrow->chars + 1);
-                }
-
-                E.mode = NORMAL_MODE;
-
-                free(E.lastrow->chars);
-                E.lastrow->chars = strdup("");
-                E.lastrow->len = 0;
-                return;
-            }
-        }
-
-        if (reverse)
-        {
-            i--;
+            result = baseNextFind(needle, realcx, E.cy, 1, &foundY);
         } else {
-            i++;
+            result = baseNextFind(needle, realcx, E.cy, 0, &foundY);
+        }
+    }
+
+    if (result != NULL)
+    {
+        E.cx = result - E.row[foundY].chars;
+        E.cy = foundY;
+
+        if (E.mode == COMMANDLINE_MODE) 
+        {
+            if (E.lastSearch) free(E.lastSearch);
+            E.lastSearch = strdup(E.lastrow->chars + 1);
+
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
+            E.lastrow->len = 0;
         }
 
-        if (i == limit)
-        {
-            break;
-        }        
-    }
-
-    free(E.lastrow->chars);
-    E.lastrow->chars = strdup("");
-    E.lastrow->len = 0;
-
-    if (E.mode == COMMANDLINE_MODE)
-    {
-        E.cx = E.lastcx;
         E.mode = NORMAL_MODE;
+        return;
     }
-    const char* msg = "Pattern not found";
-    showMessageAtCommandLine(msg, strlen(msg));
+
+    else
+    {
+        if (E.mode == COMMANDLINE_MODE)
+        {
+            free(E.lastrow->chars);
+            E.lastrow->chars = strdup("");
+            E.lastrow->len = 0;
+            E.cx = E.lastcx;
+            E.mode = NORMAL_MODE;
+        }
+        const char* msg = "Pattern not found";
+        showMessageAtCommandLine(msg, strlen(msg));
+    }
 }
 
 void processKey(int c) {
