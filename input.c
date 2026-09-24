@@ -419,6 +419,9 @@ void splitRow(void) {
 
     row->chars[E.cx] = '\0';
     row->len = E.cx;
+    char *tmp = realloc(row->chars, row->len + 1);
+    if (!tmp) return;
+    row->chars = tmp;
 
     insertRow(E.cy + 1);
 
