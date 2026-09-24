@@ -627,10 +627,7 @@ void processNormalModeKey(int c)
 
                     else
                     {
-                        E.dirty += row->len;
-                        free(row->chars);
-                        memmove(&E.row[E.cy], &E.row[E.cy+1], sizeof(erow) * (E.numrows - E.cy - 1));
-                        E.numrows--;
+                        deleteRow(E.cy);
 
                         if (E.cy >= E.numrows)
                             E.cy = E.numrows-1;
@@ -757,23 +754,49 @@ void processVisualModeKey(int c)
 
             E.cx = startX;
             E.cy = startY;
-
-            int len = strlen(E.yankbuff);
             
             if (startY < endY)
             {
-                for (int i = 0; i < len; i++)
-                {
-                    deleteCharAtCursor();
+                char *newChars = realloc(E.row[startY].chars, startX + 1);
+
+                if (newChars == NULL)
+                    return;
+
+                E.row[startY].chars = newChars;
+                E.row[startY].len = startX;
+                E.row[startY].chars[startX] = '\0';
+
+                for (int i = startY + 1; i < endY; i++) {
+                    free(E.row[i].chars);
                 }
+
+                memmove(
+                    &E.row[startY + 1],
+                    &E.row[endY],
+                    sizeof(erow) * (E.numrows - endY)
+                );
+
+                E.numrows -= endY - startY - 1;
+
+                erow *row = &E.row[startY + 1];
+
+                memmove(
+                    row->chars,
+                    row->chars + endX + 1,
+                    row->len - endX
+                );
+
+                row->len -= endX + 1;
+                row->chars[row->len] = '\0';
+
+                mergeLines(startY + 1, startY);
             }
 
             else
             {
-                for (int i = 0; i <= (endX - startX); i++)
-                {
-                    deleteCharAtCursor();
-                }
+                memmove(E.row[E.cy].chars + startX, E.row[E.cy].chars + endX + 1, E.row[E.cy].len - endX);
+                E.row[E.cy].len -= endX - startX + 1;
+                E.row[E.cy].chars[E.row[E.cy].len] = '\0';
 
                 E.cx = startX;
                 E.cy = old_cy;

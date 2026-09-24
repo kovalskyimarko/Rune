@@ -344,7 +344,6 @@ void deleteCharAtCursorAtCommandLine(void) {
 }
 
 void insertRow(int at) {
-    E.dirty++;
     if (at < 0 || at > E.numrows) return;
 
     erow *tmp = realloc(E.row, sizeof(erow) * (E.numrows + 1));
@@ -360,6 +359,16 @@ void insertRow(int at) {
     E.row[at].chars = strdup("");
 
     E.numrows++;
+    E.dirty++;
+}
+
+void deleteRow(int at) {
+    if (at < 0 || at >= E.numrows) return;
+    
+    free(E.row[at].chars);
+    memmove(&E.row[at], &E.row[at + 1], sizeof(erow) * (E.numrows - at - 1));
+    E.numrows--;
+    E.dirty++;
 }
 
 void splitRow(void) {

@@ -112,6 +112,8 @@ int readKey(void);
 void find(char* needle, bool reverse);
 void processKey(int c);
 void insertRowWithText(int at, const char *s, size_t len);
+void deleteRow(int at);
+void mergeLines(int lineToDeleteY, int lineToMergeWithY);
 
 // file.c
 void editorSetFilename(const char *path);
