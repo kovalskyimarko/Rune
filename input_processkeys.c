@@ -1,5 +1,14 @@
 #include "rune.h"
 
+void baseDeleteString(int x, int len, erow* row) {
+    if (x < 0 || x >= row->len || len <= 0) return;
+    if (x + len > row->len) len = row->len - x;
+
+    memmove(row->chars + x, row->chars + x + len, row->len - x - len + 1);
+    row->len -= len;
+    E.dirty += len;
+}
+
 void moveCursor(int c)
 {
     switch (c)
@@ -145,12 +154,9 @@ void moveCursorKeyBinds(int c)
                         
                         end = E.cx;
                         
-                        memmove(&row->chars[start], &row->chars[end], row->len - end + 1);
-                        
-                        E.pendingAction = '\0';
-                        row->len -= end-start;
+                        baseDeleteString(start, end - start, row);
                         E.cx = start;
-                        E.dirty += end - start;
+                        E.pendingAction = '\0';
 
                         continue;;
                     }
@@ -160,10 +166,8 @@ void moveCursorKeyBinds(int c)
                     
                     end = E.cx;
                     
-                    memmove(&row->chars[start], &row->chars[end], row->len - end + 1);
-                    row->len -= end-start;
+                    baseDeleteString(start, end - start, row);
                     E.cx = start;
-                    E.dirty += end - start;
                 }
 
                 E.pendingAction = '\0';
@@ -794,10 +798,7 @@ void processVisualModeKey(int c)
 
             else
             {
-                memmove(E.row[E.cy].chars + startX, E.row[E.cy].chars + endX + 1, E.row[E.cy].len - endX);
-                E.row[E.cy].len -= endX - startX + 1;
-                E.row[E.cy].chars[E.row[E.cy].len] = '\0';
-
+                baseDeleteString(startX, endX - startX + 1, &E.row[E.cy]);
                 E.cx = startX;
                 E.cy = old_cy;
             }
