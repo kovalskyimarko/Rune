@@ -6,10 +6,6 @@ int readKey(void) {
 
     /* Keep looping until we read exactly 1 byte */
     while ((n = read(STDIN_FILENO, &c, 1)) != 1) {
-        if (n == 0) {
-            exit(0); 
-        }
-
         if (n == -1) {
             if (errno == EINTR || errno == EAGAIN)
                 continue;

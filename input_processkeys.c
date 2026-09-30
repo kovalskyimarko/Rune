@@ -138,14 +138,18 @@ void moveCursorKeyBinds(int c)
         case 'w': {
             if (E.numrows == 0) break;
 
-            if (E.pendingAction == 'd')
+            if (E.pendingAction == 'd' && E.mode != VISUAL_MODE)
             {
                 int mult = E.normalModeMult == 0 ? 1 : E.normalModeMult;
                 for (int i = 0; i < mult; i++)
                 {
                     erow* row = &E.row[E.cy];
 
-                    if (E.cx >= row->len) { E.pendingAction = '\0'; break; }
+                    if (E.cx >= row->len) {
+                        E.pendingAction = '\0'; 
+                        E.normalModeMult = 0;
+                        break; 
+                    }
 
                     int start = E.cx;
                     int end;
@@ -173,6 +177,7 @@ void moveCursorKeyBinds(int c)
                 }
 
                 E.pendingAction = '\0';
+                E.normalModeMult = 0;
                 break;
             }
             
@@ -468,8 +473,6 @@ void copy(void)
     }
 
     E.yankbuff[currIndex] = '\0';
-    E.mode = NORMAL_MODE;
-
 }
 
 void processLastRowKeys(int c)
@@ -540,9 +543,14 @@ void processNormalModeKey(int c)
     switch (c)
     {
         case 'i':
+            E.normalModeMult = 0;
+            E.pendingAction = '\0';
             E.mode = INSERT_MODE;
             break;
         case 'v':
+            if (E.numrows == 0) return;
+            E.normalModeMult = 0;
+            E.pendingAction = '\0';
             E.vStartcx = E.cx;
             E.vStartcy = E.cy;
             E.mode = VISUAL_MODE;
@@ -650,6 +658,7 @@ void processNormalModeKey(int c)
                     }
                 }
 
+                E.normalModeMult = 0;
                 E.pendingAction = '\0';
             }
 
@@ -692,7 +701,12 @@ void processNormalModeKey(int c)
 
             int charToFind = readKey();
 
-            if (charToFind == '\x1b') break;
+            if (charToFind == '\x1b') 
+            {
+                E.normalModeMult = 0;
+                E.pendingAction = '\0';
+                break;
+            }
 
             erow* row = &E.row[E.cy];
             int mult = E.normalModeMult == 0 ? 1 : E.normalModeMult;
@@ -708,6 +722,8 @@ void processNormalModeKey(int c)
                     break;
                 }
             }
+
+            E.normalModeMult = 0;
 
             break;
         }
@@ -732,6 +748,8 @@ void processNormalModeKey(int c)
 
         case ':':
         case '/':
+            E.normalModeMult = 0;
+            E.pendingAction = '\0';
             free(E.lastrow->chars);
             E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
@@ -739,6 +757,10 @@ void processNormalModeKey(int c)
             E.lastcx = E.cx;
             E.cx = 0;
             insertCharAtCommandLine(c);
+            break;
+        case '\x1b':
+            E.normalModeMult = 0;
+            E.pendingAction = '\0';
             break;
     }
 }
@@ -749,11 +771,15 @@ void processVisualModeKey(int c)
     {
         case 'y': {
             copy();
+            E.mode = NORMAL_MODE;
             break;
         }
 
         case 'd':
         case 'x': {
+            if (E.numrows == 0) return;
+            if (E.row[E.cy].len == 0) return;
+
             copy();
 
             int startY = E.vStartcy;
@@ -782,6 +808,8 @@ void processVisualModeKey(int c)
 
                 for (int i = startY + 1; i < endY; i++) {
                     free(E.row[i].chars);
+                    if (E.row[i].hl)
+                        free(E.row[i].hl);
                 }
 
                 memmove(
@@ -804,6 +832,7 @@ void processVisualModeKey(int c)
                 row->chars[row->len] = '\0';
 
                 mergeLines(startY + 1, startY);
+                E.dirty++;
             }
 
             else
