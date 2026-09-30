@@ -138,7 +138,7 @@ void mergeLines(int lineToDeleteY, int lineToMergeWithY);
 // file.c
 void editorSetFilename(const char *path);
 char* expandPath(const char *input);
-void savefile(void);
+bool savefile(void);
 void openfile(const char *fullpath);
 
 //syntax_parser.c

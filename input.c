@@ -6,7 +6,14 @@ int readKey(void) {
 
     /* Keep looping until we read exactly 1 byte */
     while ((n = read(STDIN_FILENO, &c, 1)) != 1) {
-        if (n == -1 && errno != EAGAIN) {
+        if (n == 0) {
+            exit(0); 
+        }
+
+        if (n == -1) {
+            if (errno == EINTR || errno == EAGAIN)
+                continue;
+
             error("read");
         }
     }
@@ -106,6 +113,7 @@ void parseCommand(const char *cmd) {
         (strncmp(cmd, ":x", 2) == 0&& (cmd[2] == '\0' || cmd[2] == ' '))) {
 
         char* arg = getCommandArg(cmd);
+        char* old_filepath = E.filepath ? strdup(E.filepath) : NULL;
 
         if (arg != NULL) {
             char *target_path = expandPath(arg);
@@ -116,8 +124,25 @@ void parseCommand(const char *cmd) {
             }
         }
 
-        savefile();
-        processKey(CTRL_KEY('q'));
+        if (savefile())
+        {
+            processKey(CTRL_KEY('q'));
+        } else {
+            if (old_filepath) {
+                editorSetFilename(old_filepath);
+            } else {
+                if (E.filename) {
+                    free(E.filename);
+                    E.filename = NULL;
+                }
+                if (E.filepath) {
+                    free(E.filepath);
+                    E.filepath = NULL;
+                }
+            }
+        }
+
+        if (old_filepath) free(old_filepath);
     }
 
     else if (strncmp(cmd, ":pwd", 4) == 0 &&
@@ -153,15 +178,21 @@ void parseCommand(const char *cmd) {
             }
         }
 
+        char size_buf[32];
+        if (size == -1) {
+            strcpy(size_buf, "? bytes");
+        } else {
+            snprintf(size_buf, sizeof(size_buf), "%ld bytes", size);
+        }
+
         char buf[128];
         snprintf(buf, sizeof(buf),
-            "File: %s, Number of rows: %d, Cursor pos: x: %d, y: %d, size: %ld %s%s",
+            "File: %s, Number of rows: %d, Cursor pos: x: %d, y: %d, size: %s%s",
             E.filename ? E.filename : "[No Name]",
             E.numrows,
             E.cx + 1,
             E.cy + 1,
-            size == -1 ? 0 : size,
-            size == -1 ? "" : "bytes",
+            size_buf,
             E.dirty > 0 ? " [MODIFIED]" : ""
         );
 
@@ -172,6 +203,7 @@ void parseCommand(const char *cmd) {
         (cmd[2] == '\0' || cmd[2] == ' ')) {
 
         char* arg = getCommandArg(cmd);
+        char* old_filepath = E.filepath ? strdup(E.filepath) : NULL;
 
         if (arg != NULL)
         {
@@ -183,11 +215,26 @@ void parseCommand(const char *cmd) {
             }
         }
 
-        savefile();
+        if (!savefile()) {
+            if (old_filepath) {
+                editorSetFilename(old_filepath);
+            } else {
+                if (E.filename) { free(E.filename); E.filename = NULL; }
+                if (E.filepath) { free(E.filepath); E.filepath = NULL; }
+            }
+        }
+
+        if (old_filepath) free(old_filepath);
     }
 
     else if (strncmp(cmd, ":e", 2) == 0 &&
         (cmd[2] == '\0' || cmd[2] == ' ')) {
+        if (E.dirty > 0) {
+            const char* msg = "No write since last change";
+            showMessageAtCommandLine(msg, strlen(msg));
+            return;
+        }
+
         if (cmd[2] == '\0')
         {
             if (E.filename == NULL)
@@ -337,6 +384,7 @@ void deleteCharAtCursor(void) {
 
 void deleteCharBeforeCursorAtCommandLine(void) 
 {
+    if (E.cx <= 0) return;
     baseDeleteChar(E.cx - 1, E.lastrow);
     E.cx--;
 }

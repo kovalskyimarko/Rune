@@ -41,18 +41,18 @@ void editorClearBuffer(void) {
     E.lastcx = 0;
 }
 
-void savefile(void) {
+bool savefile(void) {
     if (!E.filepath) {
         const char* msg = "Error: No file name";
         showMessageAtCommandLine(msg, strlen(msg));
-        return;
+        return false;
     }
 
     FILE *fptr = fopen(E.filepath, "w");
     if (!fptr) { 
         const char* msg = "Error: Cannot save file (permission denied?)";
         showMessageAtCommandLine(msg, strlen(msg));
-        return;
+        return false;
     }
 
     for (int i = 0; i < E.numrows; i++) {
@@ -63,6 +63,8 @@ void savefile(void) {
     fclose(fptr);
 
     E.dirty = 0;
+
+    return true;
 }
 
 void openfile(const char *fullpath) {
