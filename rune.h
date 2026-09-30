@@ -28,6 +28,8 @@
 #define LEAVE_ALT_BUFF "\x1b[?1049l"
 #define LEAVE_ALT_BUFF_B sizeof(LEAVE_ALT_BUFF) - 1
 
+#define u_i8 u_int8_t
+
 
 enum SPECIAL_KEYS {
     ARROW_UP = 1000,
@@ -48,8 +50,26 @@ typedef enum MODES {
     VISUAL_MODE
 } MODES;
 
+enum HL_TYPE {
+
+    HL_DEFAULT = 0,
+
+    HL_NUMBER,
+    HL_STRING,
+
+    HL_BRACKETS,
+
+    HL_TYPE,
+    HL_CONTROL,
+    HL_STORAGE,
+    HL_QUALIFIER,
+    HL_STRUCT,
+    HL_SPECIAL,
+};
+
 typedef struct erow {
     char* chars;
+    u_i8* hl;
     int len;
 } erow;
 
@@ -120,6 +140,9 @@ void editorSetFilename(const char *path);
 char* expandPath(const char *input);
 void savefile(void);
 void openfile(const char *fullpath);
+
+//syntax_parser.c
+void parse(erow* row);
 
 // main.c
 void init(void);

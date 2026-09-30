@@ -7,6 +7,8 @@ void baseDeleteString(int x, int len, erow* row) {
     memmove(row->chars + x, row->chars + x + len, row->len - x - len + 1);
     row->len -= len;
     E.dirty += len;
+
+    parse(row);
 }
 
 void moveCursor(int c)
@@ -512,6 +514,7 @@ void processLastRowKeys(int c)
 
         case '\x1b':
             free(E.lastrow->chars);
+            if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
             E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
             E.cx = E.lastcx;
@@ -627,6 +630,8 @@ void processNormalModeKey(int c)
                         row->len = 0;
                         row->chars = strdup("");
                         E.cx = 0;
+
+                        parse(row);
                     }
 
                     else

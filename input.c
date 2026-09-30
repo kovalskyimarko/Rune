@@ -273,6 +273,7 @@ void baseDeleteChar(int x, erow* row)
 
     memmove(&row->chars[x], &row->chars[x+1], (row->len - x));
     row->len--;
+    parse(row);
 }
 
 void mergeLines(int lineToDeleteY, int lineToMergeWithY)
@@ -291,10 +292,11 @@ void mergeLines(int lineToDeleteY, int lineToMergeWithY)
     lineToMerge->len += lineToDel->len;
 
     free(lineToDel->chars);
-
+    if (lineToDel->hl) free(lineToDel->hl);
     memmove(&E.row[lineToDeleteY], &E.row[lineToDeleteY + 1], sizeof(erow) * (E.numrows - lineToDeleteY - 1));
 
     E.numrows--;
+    parse(lineToMerge);
 }
 
 void deleteCharBeforeCursor(void) {
@@ -357,6 +359,7 @@ void insertRow(int at) {
 
     E.row[at].len = 0;
     E.row[at].chars = strdup("");
+    E.row[at].hl = NULL;
 
     E.numrows++;
     E.dirty++;
@@ -366,6 +369,7 @@ void deleteRow(int at) {
     if (at < 0 || at >= E.numrows) return;
     
     free(E.row[at].chars);
+    if (E.row[at].hl) free(E.row[at].hl);
     memmove(&E.row[at], &E.row[at + 1], sizeof(erow) * (E.numrows - at - 1));
     E.numrows--;
     E.dirty++;
@@ -439,6 +443,9 @@ void splitRow(void) {
     E.row[E.cy + 1].len = strlen(right);
     E.cy++;
     E.cx = spaces;
+
+    parse(&E.row[E.cy - 1]);
+    parse(&E.row[E.cy]);
 }
 
 void insertRowWithText(int at, const char *s, size_t len) {
@@ -455,6 +462,7 @@ void insertRowWithText(int at, const char *s, size_t len) {
     memcpy(row->chars, s, len);
     row->chars[len] = '\0';
     row->len = len;
+    parse(row);
 }
 
 void baseInsertString(const char* s, int len, erow* row, int x)
@@ -471,6 +479,7 @@ void baseInsertString(const char* s, int len, erow* row, int x)
 
     row->chars = newstr;
     row->len += len;
+    parse(row);
 }
 
 void insertString(const char *s, int len) {
@@ -504,6 +513,7 @@ void sendCommand(void) {
     parseCommand(E.lastrow->chars);
 
     free(E.lastrow->chars);
+    if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
     E.lastrow->chars = strdup("");
     E.lastrow->len = 0;
 
@@ -625,6 +635,7 @@ void find(char* needle, bool reverse)
             E.lastSearch = strdup(E.lastrow->chars + 1);
 
             free(E.lastrow->chars);
+            if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
             E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
         }
@@ -638,6 +649,7 @@ void find(char* needle, bool reverse)
         if (E.mode == COMMANDLINE_MODE)
         {
             free(E.lastrow->chars);
+            if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
             E.lastrow->chars = strdup("");
             E.lastrow->len = 0;
             E.cx = E.lastcx;

@@ -12,6 +12,10 @@ void bufferAppend(buffer *b, const char *s, int slen) {
     if (b->len + slen > b->capacity) {
         int newCap = (b->capacity == 0) ? 4096 : (b->capacity*2) + slen;
 
+        if (b->len + slen > newCap) {
+           newCap = b->len + slen;
+        }
+
         char *newbuf = realloc(b->chars, newCap);
         if (!newbuf)
         {
@@ -151,17 +155,49 @@ void bufferAppendRows(buffer *b) {
                         else if (cy == ey && cy > sy && cx <= ex) in_hl = true;               // Last row
                     }
 
-                    if (in_hl && !hl_active) {
-                        bufferAppend(b, "\x1b[7m", 4);
-                        hl_active = true;
+                    if (in_hl) {
+                        if (!hl_active) {
+                            bufferAppend(b, "\x1b[7m", 4);
+                            hl_active = true;
+                        }
+                        bufferAppend(b, &row->chars[cx], 1);
                     }
 
-                    else if (!in_hl && hl_active) {
-                        bufferAppend(b, "\x1b[m", 3);
-                        hl_active = false;
-                    }
+                    else {
+                        if (hl_active) 
+                        {
+                            bufferAppend(b, "\x1b[m", 3);
+                            hl_active = false;
+                        }
 
-                    bufferAppend(b, &row->chars[cx], 1);
+                        int current_hl = (row->hl) ? row->hl[cx] : HL_DEFAULT;
+
+                        if (current_hl == HL_DEFAULT) {
+                            bufferAppend(b, "\x1b[37m", 5);
+                        } else if (current_hl == HL_STRING) {
+                            bufferAppend(b, "\x1b[92m", 5);
+                        } else if (current_hl == HL_NUMBER) {
+                            bufferAppend(b, "\x1b[93m", 5);
+                        } else if (current_hl == HL_TYPE) {
+                            bufferAppend(b, "\x1b[95m", 5);
+                        } else if (current_hl == HL_STRUCT) {
+                            bufferAppend(b, "\x1b[35m", 5);
+                        } else if (current_hl == HL_CONTROL) {
+                            bufferAppend(b, "\x1b[91m", 5);
+                        } else if (current_hl == HL_STORAGE) {
+                            bufferAppend(b, "\x1b[94m", 5);
+                        } else if (current_hl == HL_QUALIFIER) {
+                            bufferAppend(b, "\x1b[96m", 5);
+                        } else if (current_hl == HL_SPECIAL) {
+                            bufferAppend(b, "\x1b[95m", 5);
+                        } else if (current_hl == HL_BRACKETS) {
+                            bufferAppend(b, "\x1b[33m", 5);
+                        }
+
+                        bufferAppend(b, &row->chars[cx], 1);
+                        
+                        bufferAppend(b, "\x1b[39m", 5);
+                    }
                 }
 
                 if (hl_active) {
