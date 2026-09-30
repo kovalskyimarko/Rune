@@ -147,8 +147,9 @@ void parseCommand(const char *cmd) {
                 if (fseek(fp, 0, SEEK_END) == 0) 
                 {
                     size = ftell(fp);
-                    fclose(fp);
                 }
+
+                fclose(fp);
             }
         }
 
