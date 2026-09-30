@@ -61,13 +61,28 @@ void cleanup(void) {
     if (E.lastSearch) { free(E.lastSearch); E.lastSearch = NULL; }
 }
 
-int main(void) {
+int main(int argc, char** argv) {
     init();
     enableAltBuff();
     enableRawMode();
 
+    if (argc == 2)
+    {
+        char* filepath = expandPath(argv[1]);
+        openfile(filepath);
+        free(filepath);
+
+        E.statusmsg[0] = '\0'; 
+    }
+
     atexit(disableAltBuff);
     atexit(cleanup);
+
+    struct sigaction sa;
+    sa.sa_handler = handleSigwinch;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGWINCH, &sa, NULL);
 
     while (1) {
         refreshScreen();

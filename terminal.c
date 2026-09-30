@@ -44,6 +44,18 @@ void enableRawMode(void) {
         error("tcsetattr");
 }
 
+void handleSigwinch(int sig)
+{
+    (void) sig;
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+        error("ioctl");
+    }
+
+    E.screenHeight = ws.ws_row - 1;
+    E.screenWidth = ws.ws_col;
+}
+
 void getWindowSize(int *rows, int *cols) {
     struct winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {

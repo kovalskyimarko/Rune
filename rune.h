@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <string.h>
 #include <stdbool.h>
+#include <signal.h>
+
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define EDITOR_VERSION "0.0.1"
@@ -103,13 +105,15 @@ struct editorConfig {
 
 extern struct editorConfig E;
 
-void refreshScreen(void); 
+void refreshScreen(void);
+
 // terminal.c
 void disableRawMode(void);
 void enableAltBuff(void);
 void disableAltBuff(void);
 void enableRawMode(void);
 void getWindowSize(int *rows, int *cols);
+void handleSigwinch(int sig);
 
 // input_processkeys.c
 void processNormalModeKey(int c);

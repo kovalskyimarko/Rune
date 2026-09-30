@@ -6,10 +6,10 @@ int readKey(void) {
 
     /* Keep looping until we read exactly 1 byte */
     while ((n = read(STDIN_FILENO, &c, 1)) != 1) {
-        if (n == -1) {
-            if (errno == EINTR || errno == EAGAIN)
-                continue;
-
+        if (n == -1 && errno == EINTR) {
+            return -1;
+        }
+        if (n == -1 && errno != EAGAIN) {
             error("read");
         }
     }
@@ -706,6 +706,8 @@ void find(char* needle, bool reverse)
 }
 
 void processKey(int c) {
+    if (c == -1) return;
+
     if (c == CTRL_KEY('q'))
     {
         write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
