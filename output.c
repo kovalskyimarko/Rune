@@ -16,13 +16,8 @@ void bufferAppend(buffer *b, const char *s, int slen) {
            newCap = b->len + slen;
         }
 
-        char *newbuf = realloc(b->chars, newCap);
-        if (!newbuf)
-        {
-            return;
-        }
+        b->chars = xrealloc(b->chars, newCap);
 
-        b->chars = newbuf;
         b->capacity = newCap;
     }
 

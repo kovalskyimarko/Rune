@@ -420,8 +420,7 @@ void copy(void)
 
     len+=1;
 
-    E.yankbuff = malloc(len);
-    if (!E.yankbuff) return;
+    E.yankbuff = xmalloc(len);
     int currIndex = 0;
 
     if (startY < endY) 
@@ -523,7 +522,7 @@ void processLastRowKeys(int c)
         case '\x1b':
             free(E.lastrow->chars);
             if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
-            E.lastrow->chars = strdup("");
+            E.lastrow->chars = xstrdup("");
             E.lastrow->len = 0;
             E.cx = E.lastcx;
             E.mode = NORMAL_MODE;
@@ -612,8 +611,7 @@ void processNormalModeKey(int c)
             if (E.numrows == 0 || E.cx >= E.row[E.cy].len) break;
             if (E.yankbuff) free(E.yankbuff);
 
-            E.yankbuff = malloc(sizeof(char) * 2);
-            if (!E.yankbuff) break;
+            E.yankbuff = xmalloc(sizeof(char) * 2);
 
             E.yankbuff[0] = E.row[E.cy].chars[E.cx];
             E.yankbuff[1] = '\0';
@@ -641,7 +639,7 @@ void processNormalModeKey(int c)
                         E.dirty += row->len;
                         free(row->chars);
                         row->len = 0;
-                        row->chars = strdup("");
+                        row->chars = xstrdup("");
                         E.cx = 0;
 
                         parse(row);
@@ -751,7 +749,7 @@ void processNormalModeKey(int c)
             E.normalModeMult = 0;
             E.pendingAction = '\0';
             free(E.lastrow->chars);
-            E.lastrow->chars = strdup("");
+            E.lastrow->chars = xstrdup("");
             E.lastrow->len = 0;
             E.mode = COMMANDLINE_MODE;
             E.lastcx = E.cx;
@@ -797,12 +795,8 @@ void processVisualModeKey(int c)
             
             if (startY < endY)
             {
-                char *newChars = realloc(E.row[startY].chars, startX + 1);
+                E.row[startY].chars = xrealloc(E.row[startY].chars, startX + 1);
 
-                if (newChars == NULL)
-                    return;
-
-                E.row[startY].chars = newChars;
                 E.row[startY].len = startX;
                 E.row[startY].chars[startX] = '\0';
 

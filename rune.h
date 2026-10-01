@@ -143,10 +143,16 @@ void mergeLines(int lineToDeleteY, int lineToMergeWithY);
 void editorSetFilename(const char *path);
 char* expandPath(const char *input);
 bool savefile(void);
+void emergencySave(void);
 void openfile(const char *fullpath);
 
 //syntax_parser.c
 void parse(erow* row);
+
+// xmemory.c
+void* xmalloc(size_t size);
+void* xrealloc(void* ptr, size_t size);
+char* xstrdup(const char* str);
 
 // main.c
 void init(void);

@@ -109,7 +109,7 @@ void parseCommand(const char *cmd) {
         (strncmp(cmd, ":x", 2) == 0&& (cmd[2] == '\0' || cmd[2] == ' '))) {
 
         char* arg = getCommandArg(cmd);
-        char* old_filepath = E.filepath ? strdup(E.filepath) : NULL;
+        char* old_filepath = E.filepath ? xstrdup(E.filepath) : NULL;
 
         if (arg != NULL) {
             char *target_path = expandPath(arg);
@@ -161,7 +161,7 @@ void parseCommand(const char *cmd) {
         
         if (E.filename != NULL)
         {
-            FILE *fp = fopen(E.filename, "rb");
+            FILE *fp = fopen(E.filepath, "rb");
             if (fp != NULL)
             {
                 
@@ -199,7 +199,7 @@ void parseCommand(const char *cmd) {
         (cmd[2] == '\0' || cmd[2] == ' ')) {
 
         char* arg = getCommandArg(cmd);
-        char* old_filepath = E.filepath ? strdup(E.filepath) : NULL;
+        char* old_filepath = E.filepath ? xstrdup(E.filepath) : NULL;
 
         if (arg != NULL)
         {
@@ -322,16 +322,14 @@ void baseDeleteChar(int x, erow* row)
 
 void mergeLines(int lineToDeleteY, int lineToMergeWithY)
 {
+    if (lineToDeleteY != lineToMergeWithY + 1) return;
     if (lineToDeleteY < 0 || lineToDeleteY >= E.numrows) return;
     if (lineToMergeWithY < 0 || lineToMergeWithY >= E.numrows) return;
 
     erow* lineToDel = &E.row[lineToDeleteY];
     erow* lineToMerge = &E.row[lineToMergeWithY];
 
-    char *tmp = realloc(lineToMerge->chars, lineToMerge->len + lineToDel->len + 1);
-    if (!tmp) return;
-
-    lineToMerge->chars = tmp;
+    lineToMerge->chars = xrealloc(lineToMerge->chars, lineToMerge->len + lineToDel->len + 1);
     memcpy(lineToMerge->chars + lineToMerge->len, lineToDel->chars, lineToDel->len + 1);
     lineToMerge->len += lineToDel->len;
 
@@ -362,6 +360,7 @@ void deleteCharBeforeCursor(void) {
 }
 
 void deleteCharAtCursor(void) {
+    if (E.numrows == 0) return;
     erow *row = &E.row[E.cy];
 
     if (E.cx < 0 || E.cx > row->len) return;
@@ -393,9 +392,7 @@ void deleteCharAtCursorAtCommandLine(void) {
 void insertRow(int at) {
     if (at < 0 || at > E.numrows) return;
 
-    erow *tmp = realloc(E.row, sizeof(erow) * (E.numrows + 1));
-    if (!tmp) return;
-    E.row = tmp;
+    E.row = xrealloc(E.row, sizeof(erow) * (E.numrows + 1));
 
     if (at < E.numrows) {
         memmove(&E.row[at + 1], &E.row[at],
@@ -403,7 +400,7 @@ void insertRow(int at) {
     }
 
     E.row[at].len = 0;
-    E.row[at].chars = strdup("");
+    E.row[at].chars = xstrdup("");
     E.row[at].hl = NULL;
 
     E.numrows++;
@@ -468,18 +465,14 @@ void splitRow(void) {
     if (spaces < 4) spaces = 0;
     if (spaces % 4 != 0) spaces = spaces - spaces % 4;
 
-    char *right = malloc(spaces + (row->len - E.cx) + 1);
-
-    if (!right) return;
+    char *right = xmalloc(spaces + (row->len - E.cx) + 1);
 
     memset(right, ' ', spaces);
     strcpy(right + spaces, row->chars + E.cx);
 
     row->chars[E.cx] = '\0';
     row->len = E.cx;
-    char *tmp = realloc(row->chars, row->len + 1);
-    if (!tmp) return;
-    row->chars = tmp;
+    row->chars = xrealloc(row->chars, row->len + 1);
 
     insertRow(E.cy + 1);
 
@@ -501,7 +494,7 @@ void insertRowWithText(int at, const char *s, size_t len) {
     erow *row = &E.row[at];
     free(row->chars);
 
-    row->chars = malloc(len + 1);
+    row->chars = xmalloc(len + 1);
     if (!row->chars) return;
 
     memcpy(row->chars, s, len);
@@ -512,17 +505,16 @@ void insertRowWithText(int at, const char *s, size_t len) {
 
 void baseInsertString(const char* s, int len, erow* row, int x)
 {
+    if (len <= 0) return;
     if (x < 0) x = 0;
     if (x > row->len) x = row->len;
 
-    char* newstr = realloc(row->chars, row->len + len + 1);
-    if (!newstr) return;
+    row->chars = xrealloc(row->chars, row->len + len + 1);
 
-    memmove(&newstr[x + len], &newstr[x], row->len - x + 1);
+    memmove(&row->chars[x + len], &row->chars[x], row->len - x + 1);
 
-    memcpy(&newstr[x], s, len);
+    memcpy(&row->chars[x], s, len);
 
-    row->chars = newstr;
     row->len += len;
     parse(row);
 }
@@ -559,7 +551,7 @@ void sendCommand(void) {
 
     free(E.lastrow->chars);
     if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
-    E.lastrow->chars = strdup("");
+    E.lastrow->chars = xstrdup("");
     E.lastrow->len = 0;
 
     E.mode = NORMAL_MODE;
@@ -677,11 +669,11 @@ void find(char* needle, bool reverse)
         if (E.mode == COMMANDLINE_MODE) 
         {
             if (E.lastSearch) free(E.lastSearch);
-            E.lastSearch = strdup(E.lastrow->chars + 1);
+            E.lastSearch = xstrdup(E.lastrow->chars + 1);
 
             free(E.lastrow->chars);
             if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
-            E.lastrow->chars = strdup("");
+            E.lastrow->chars = xstrdup("");
             E.lastrow->len = 0;
         }
 
@@ -695,7 +687,7 @@ void find(char* needle, bool reverse)
         {
             free(E.lastrow->chars);
             if (E.lastrow->hl) { free(E.lastrow->hl); E.lastrow->hl = NULL; }
-            E.lastrow->chars = strdup("");
+            E.lastrow->chars = xstrdup("");
             E.lastrow->len = 0;
             E.cx = E.lastcx;
             E.mode = NORMAL_MODE;

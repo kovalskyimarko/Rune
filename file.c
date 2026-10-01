@@ -8,16 +8,15 @@ const char *getPathBasename(const char *path) {
 char* expandPath(const char *input) {
     if (input[0] == '~') {
         const char *home = getenv("HOME");
-        if (!home) return strdup(input);
+        if (!home) return xstrdup(input);
 
         size_t len = strlen(home) + strlen(input + 1) + 1;
-        char *dest = malloc(len);    
-        if (dest) {
-            snprintf(dest, len, "%s%s", home, input + 1);
-        }
+        char *dest = xmalloc(len);    
+        
+        snprintf(dest, len, "%s%s", home, input + 1);
         return dest;
     }
-    return strdup(input);
+    return xstrdup(input);
 }
 
 void editorSetFilename(const char *path) {
@@ -25,8 +24,8 @@ void editorSetFilename(const char *path) {
     if (E.filepath) free(E.filepath);
     if (E.filename) free(E.filename);
 
-    E.filepath = strdup(path);
-    E.filename = strdup(getPathBasename(path));
+    E.filepath = xstrdup(path);
+    E.filename = xstrdup(getPathBasename(path));
 }
 
 void editorClearBuffer(void) {
@@ -65,6 +64,18 @@ bool savefile(void) {
     E.dirty = 0;
 
     return true;
+}
+
+void emergencySave(void)
+{
+    if (E.numrows == 0 || E.dirty == 0) return;
+
+    if (!E.filepath)
+    {
+        editorSetFilename("rune_crash_recovery.txt");
+    }
+
+    savefile();
 }
 
 void openfile(const char *fullpath) {

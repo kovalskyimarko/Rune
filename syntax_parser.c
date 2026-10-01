@@ -90,8 +90,7 @@ void parse(erow* row)
         return;
     }
 
-    row->hl = realloc(row->hl, row->len);
-    if (!row->hl) return;
+    row->hl = xrealloc(row->hl, row->len);
 
     char* str = row->chars;
 
