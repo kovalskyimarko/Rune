@@ -32,6 +32,12 @@
 
 #define u_i8 u_int8_t
 
+typedef bool (*exFunc) (const char* args);
+
+typedef struct {
+    const char* name;
+    exFunc execute;
+} ExCommand;
 
 enum SPECIAL_KEYS {
     ARROW_UP = 1000,
@@ -153,6 +159,17 @@ void parse(erow* row);
 void* xmalloc(size_t size);
 void* xrealloc(void* ptr, size_t size);
 char* xstrdup(const char* str);
+
+//commands.c
+bool ex_q(const char* args);
+bool ex_qforce(const char* args);
+bool ex_qsave(const char* args);
+bool ex_pwd(const char* args);
+bool ex_info(const char* args);
+bool ex_w(const char* args);
+bool ex_e(const char* args);
+bool ex_set(const char* args);
+bool ex_bang(const char* args);
 
 // main.c
 void init(void);

@@ -24,8 +24,8 @@ void init(void) {
     E.mode = INSERT_MODE;
     getWindowSize(&E.screenHeight, &E.screenWidth);
     E.screenHeight-=1; // For the status bar
-    E.lastrow = malloc(sizeof(erow));
-    E.lastrow->chars = strdup("");
+    E.lastrow = xmalloc(sizeof(erow));
+    E.lastrow->chars = xstrdup("");
     E.lastrow->chars[0] = '\0';
     E.lastrow->len = 0;
     E.statusmsg[0] = '\0';

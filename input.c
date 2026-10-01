@@ -69,246 +69,53 @@ void showMessageAtCommandLine(const char *s, int len) {
     E.statusmsg[bytesCopy] = '\0';
 }
 
-char* getCommandArg(const char *cmd)
-{
-    char *space_ptr = strchr(cmd, ' ');
-    if (space_ptr != NULL) {
-        while (*space_ptr == ' ') space_ptr++;
+ExCommand commands[] = {
+    {":w", ex_w},
+    {":wq", ex_qsave},
+    {":x", ex_qsave},
+    {":e", ex_e},
+    {":q", ex_q},
+    {":q!", ex_qforce},
+    {":info", ex_info},
+    {":set", ex_set},
+    {":pwd", ex_pwd},
+    {":!", ex_bang}
+};
 
-        if (*space_ptr != '\0') return space_ptr;
-    }
-    
-    return NULL;
-}
+#define NUM_COMMANDS (sizeof(commands) / sizeof(commands[0]))
 
 void parseCommand(const char *cmd) {
     while (*cmd == ' ') cmd++;
+    if (*cmd == '\0') return;
 
-    if (strncmp(cmd, ":q", 2) == 0 &&
-        cmd[2] == '\0') {
-        
-        if (E.dirty > 0)
-        {
-            const char* message = "Unsaved changes. To quit without saving write :q!";
-            showMessageAtCommandLine(message, strlen(message));
+    char cmd_name[16] = {0};
+    const char *args = NULL;
+
+    if (cmd[0] == ':' && cmd[1] == '!') {
+        cmd_name[0] = ':';
+        cmd_name[1] = '!';
+        cmd_name[2] = '\0';
+        args = cmd + 2;
+    } else {
+        int i = 0;
+        while (cmd[i] && cmd[i] != ' ' && i < 15) {
+            cmd_name[i] = cmd[i];
+            i++;
         }
-
-        else
-        {
-            processKey(CTRL_KEY('q'));
-        }
-
+        args = cmd + i;
     }
 
-    else if (strncmp(cmd, ":q!", 3) == 0 &&
-        cmd[3] == '\0') {
-        processKey(CTRL_KEY('q'));
-    }
+    while (args && *args == ' ') args++;
 
-    else if((strncmp(cmd, ":wq", 3) == 0 && (cmd[3] == '\0' || cmd[3] == ' ')) || 
-        (strncmp(cmd, ":x", 2) == 0&& (cmd[2] == '\0' || cmd[2] == ' '))) {
-
-        char* arg = getCommandArg(cmd);
-        char* old_filepath = E.filepath ? xstrdup(E.filepath) : NULL;
-
-        if (arg != NULL) {
-            char *target_path = expandPath(arg);
-            if (target_path)
-            {
-                editorSetFilename(target_path);
-                free(target_path);
-            }
-        }
-
-        if (savefile())
-        {
-            processKey(CTRL_KEY('q'));
-        } else {
-            if (old_filepath) {
-                editorSetFilename(old_filepath);
-            } else {
-                if (E.filename) {
-                    free(E.filename);
-                    E.filename = NULL;
-                }
-                if (E.filepath) {
-                    free(E.filepath);
-                    E.filepath = NULL;
-                }
-            }
-        }
-
-        if (old_filepath) free(old_filepath);
-    }
-
-    else if (strncmp(cmd, ":pwd", 4) == 0 &&
-        cmd[4] == '\0') {
-        
-        char buf[1024];
-        if (getcwd(buf, sizeof(buf)) != NULL) {
-            showMessageAtCommandLine(buf, strlen(buf));
-        } else {
-            const char* errormessage = "Unknown error";
-            showMessageAtCommandLine(errormessage, strlen(errormessage));
-        }
-
-    }
-
-    else if (strncmp(cmd, ":info", 5) == 0 &&
-        cmd[5] == '\0') {
-
-        long size = -1;
-        
-        if (E.filename != NULL)
-        {
-            FILE *fp = fopen(E.filepath, "rb");
-            if (fp != NULL)
-            {
-                
-                if (fseek(fp, 0, SEEK_END) == 0) 
-                {
-                    size = ftell(fp);
-                }
-
-                fclose(fp);
-            }
-        }
-
-        char size_buf[32];
-        if (size == -1) {
-            strcpy(size_buf, "? bytes");
-        } else {
-            snprintf(size_buf, sizeof(size_buf), "%ld bytes", size);
-        }
-
-        char buf[128];
-        snprintf(buf, sizeof(buf),
-            "File: %s, Number of rows: %d, Cursor pos: x: %d, y: %d, size: %s%s",
-            E.filename ? E.filename : "[No Name]",
-            E.numrows,
-            E.cx + 1,
-            E.cy + 1,
-            size_buf,
-            E.dirty > 0 ? " [MODIFIED]" : ""
-        );
-
-        showMessageAtCommandLine(buf, strlen(buf));
-    }
-
-    else if (strncmp(cmd, ":w", 2) == 0 &&
-        (cmd[2] == '\0' || cmd[2] == ' ')) {
-
-        char* arg = getCommandArg(cmd);
-        char* old_filepath = E.filepath ? xstrdup(E.filepath) : NULL;
-
-        if (arg != NULL)
-        {
-            char *target_path = expandPath(arg);
-            if (target_path)
-            {
-                editorSetFilename(target_path);
-                free(target_path);
-            }
-        }
-
-        if (!savefile()) {
-            if (old_filepath) {
-                editorSetFilename(old_filepath);
-            } else {
-                if (E.filename) { free(E.filename); E.filename = NULL; }
-                if (E.filepath) { free(E.filepath); E.filepath = NULL; }
-            }
-        }
-
-        if (old_filepath) free(old_filepath);
-    }
-
-    else if (strncmp(cmd, ":e", 2) == 0 &&
-        (cmd[2] == '\0' || cmd[2] == ' ')) {
-        if (E.dirty > 0) {
-            const char* msg = "No write since last change";
-            showMessageAtCommandLine(msg, strlen(msg));
+    for (size_t i = 0; i < NUM_COMMANDS; i++) {
+        if (strcmp(cmd_name, commands[i].name) == 0) {
+            commands[i].execute(args);
             return;
         }
-
-        if (cmd[2] == '\0')
-        {
-            if (E.filename == NULL)
-            {
-                const char* errormessage = "No file name: Usage :e file_name";
-                showMessageAtCommandLine(errormessage, strlen(errormessage));
-            }
-
-            else
-            {
-                openfile(E.filepath);
-            }
-        }
-
-        else
-        {
-            char* arg = getCommandArg(cmd);
-
-            if (arg != NULL)
-            {
-                char *target_path = expandPath(arg);
-                if (target_path)
-                {
-                    openfile(target_path);
-                    free(target_path);
-                }
-            }
-        }
     }
 
-    else if (strncmp(cmd, ":set", 4) == 0 && 
-        (cmd[4] == '\0' || cmd[4] == ' '))
-    {
-        char* arg = getCommandArg(cmd);
-
-        if (arg != NULL)
-        {
-            if ((strncmp(arg, "nu", 2) == 0  && (arg[2] == ' ' || arg[2] == '\0')) || 
-                ((strncmp(arg, "number", 6) == 0) && (arg[6] == ' ' || arg[6] == '\0')))
-            {
-                E.showLineNumbers = true;
-            }
-
-            else if ((strncmp(arg, "nonu", 4) == 0  && (arg[4] == ' ' || arg[4] == '\0')) || 
-                ((strncmp(arg, "nonumber", 8) == 0) && (arg[8] == ' ' || arg[8] == '\0')))
-            {
-                E.showLineNumbers = false;
-            }
-
-            else if ((strncmp(arg, "number!", 7)) == 0  && (arg[7] == ' ' || arg[7] == '\0'))
-            {
-                E.showLineNumbers = !E.showLineNumbers;
-            }
-
-            else if ((strncmp(arg, "rnu", 3) == 0  && (arg[3] == ' ' || arg[3] == '\0')) || 
-                ((strncmp(arg, "relativenumber", 14) == 0) && (arg[14] == ' ' || arg[14] == '\0')))
-            {
-                E.showRLineNumbers = true;
-            }
-
-            else if ((strncmp(arg, "nornu", 5) == 0  && (arg[5] == ' ' || arg[5] == '\0')) || 
-                ((strncmp(arg, "norelativenumber", 16) == 0) && (arg[16] == ' ' || arg[16] == '\0')))
-            {
-                E.showRLineNumbers = false;
-            }
-
-            else if ((strncmp(arg, "relativenumber!", 15)) == 0  && (arg[15] == ' ' || arg[15] == '\0'))
-            {
-                E.showRLineNumbers = !E.showRLineNumbers;
-            }
-        }
-    }
-
-    else 
-    {
-        const char* errormessage = "Unknown command";
-        showMessageAtCommandLine(errormessage, strlen(errormessage));
-    }
+    const char* errormessage = "Unknown command";
+    showMessageAtCommandLine(errormessage, strlen(errormessage));
 }
 
 void baseDeleteChar(int x, erow* row)
