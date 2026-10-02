@@ -32,6 +32,10 @@ void init(void) {
     E.yankbuff = NULL;
     E.showLineNumbers = false;
     E.showRLineNumbers = false;
+    E.theme = THEME_NONE;
+    E.tabSize = 4;
+    E.statusSize = STATUS_FULL;
+    E.autoindent = false;
 }
 
 void cleanup(void) {
@@ -63,6 +67,13 @@ void cleanup(void) {
 
 int main(int argc, char** argv) {
     init();
+    loadRCFile();
+
+    if (E.statusSize == STATUS_OFF)
+    {
+        E.screenHeight += 1;
+    }
+
     enableAltBuff();
     enableRawMode();
 

@@ -235,42 +235,49 @@ void splitRow(void) {
 
     if (E.cx > row->len) E.cx = row->len;
 
-        int spaces = 0;
+    int spaces = 0;
 
-    for (int i = 0; i < row->len; i++)
+    if (E.autoindent)
     {
-        if (row->chars[i] != ' ')
+        for (int i = 0; i < row->len; i++)
         {
+            if (row->chars[i] != ' ')
+            {
+                break;
+            }
+
+            spaces++;
+        }
+
+        bool hasTextBefore = false;
+
+        for (int i = E.cx - 1; i >= 0; i--)
+        {
+            if (row->chars[i] == ' ') continue;
+
+            hasTextBefore = true;
+
+            if (row->chars[i] == '{') spaces+=E.tabSize;
+
             break;
         }
 
-        spaces++;
+        for (int i = E.cx; i < row->len; i++)
+        {
+            if (row->chars[i] == ' ') continue;
+
+            else if (row->chars[i] == '}' && hasTextBefore) spaces-=E.tabSize;
+
+            break;
+        }
     }
 
-    bool hasTextBefore = false;
+    bool burger = E.cx > 0 && E.cx < row->len &&
+              row->chars[E.cx - 1] == '{' &&
+              row->chars[E.cx] == '}';
 
-    for (int i = E.cx - 1; i >= 0; i--)
-    {
-        if (row->chars[i] == ' ') continue;
-
-        hasTextBefore = true;
-
-        if (row->chars[i] == '{') spaces+=4;
-
-        break;
-    }
-
-    for (int i = E.cx; i < row->len; i++)
-    {
-        if (row->chars[i] == ' ') continue;
-
-        else if (row->chars[i] == '}' && hasTextBefore) spaces-=4;
-
-        break;
-    }
-
-    if (spaces < 4) spaces = 0;
-    if (spaces % 4 != 0) spaces = spaces - spaces % 4;
+    if (spaces < E.tabSize) spaces = 0;
+    if (spaces % E.tabSize != 0) spaces = spaces - spaces % E.tabSize;
 
     char *right = xmalloc(spaces + (row->len - E.cx) + 1);
 
@@ -286,6 +293,28 @@ void splitRow(void) {
     free(E.row[E.cy + 1].chars);
     E.row[E.cy + 1].chars = right;
     E.row[E.cy + 1].len = strlen(right);
+
+    if (burger)
+    {
+        insertRow(E.cy + 1);
+
+        free(E.row[E.cy + 1].chars);
+        E.row[E.cy + 1].chars = xmalloc(spaces + E.tabSize + 1);
+
+        // I am adding here tabSize because earlier it was deleted if it detected }
+        memset(E.row[E.cy + 1].chars, ' ', spaces + E.tabSize); 
+        E.row[E.cy + 1].chars[spaces + E.tabSize] = '\0';
+        E.row[E.cy + 1].len = spaces + E.tabSize;
+
+        E.cy++;
+        E.cx = spaces + E.tabSize;
+
+        parse(&E.row[E.cy - 1]);
+        parse(&E.row[E.cy]);
+        parse(&E.row[E.cy+1]);
+        return;
+    }
+
     E.cy++;
     E.cx = spaces;
 

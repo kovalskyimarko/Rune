@@ -902,7 +902,7 @@ void processBufferKey(int c)
             break;
         }
         case '\t':
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < E.tabSize; i++) {
                 insertChar(32);
             }
             break;

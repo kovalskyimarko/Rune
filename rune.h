@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <ctype.h>
 
 
 #define CTRL_KEY(k) ((k) & 0x1f)
@@ -51,12 +52,44 @@ enum SPECIAL_KEYS {
     PAGE_DOWN = 1008
 };
 
-typedef enum MODES {
+typedef enum {
     INSERT_MODE,
     NORMAL_MODE,
     COMMANDLINE_MODE,
     VISUAL_MODE
 } MODES;
+
+typedef enum {
+    STATUS_MINIMAL,
+    STATUS_FULL,
+    STATUS_OFF 
+} STATUS_LINE_SIZE;
+
+typedef enum {
+    THEME_NONE = 0,
+    THEME_ASTRA,
+    THEME_CLOUDS,
+    THEME_GREEN,
+    NUM_THEMES
+} THEME;
+
+typedef struct {
+    const char *bg_color;
+    const char *hl_default;
+    const char *hl_string;
+    const char *hl_number;
+    const char *hl_type;
+    const char *hl_struct;
+    const char *hl_control;
+    const char *hl_storage;
+    const char *hl_qualifier;
+    const char *hl_special;
+    const char *hl_brackets;
+    const char *status_bg;
+    const char *status_fg;
+} ThemePalette;
+
+extern ThemePalette themes[NUM_THEMES];
 
 enum HL_TYPE {
 
@@ -107,6 +140,10 @@ struct editorConfig {
     char statusmsg[80];
     bool showLineNumbers;
     bool showRLineNumbers;
+    THEME theme;
+    int tabSize;
+    STATUS_LINE_SIZE statusSize;
+    bool autoindent;
 };
 
 extern struct editorConfig E;
@@ -170,6 +207,9 @@ bool ex_w(const char* args);
 bool ex_e(const char* args);
 bool ex_set(const char* args);
 bool ex_bang(const char* args);
+
+// config.c
+void loadRCFile(void);
 
 // main.c
 void init(void);

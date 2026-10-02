@@ -82,6 +82,7 @@ void bufferAppendRows(buffer *b) {
     }
 
     char buf[128];
+    ThemePalette *currentTheme = &themes[E.theme];
     for (int i = E.rowoff; i < E.screenHeight+E.rowoff; i++) {
         int numWidth = 0;
 
@@ -111,7 +112,7 @@ void bufferAppendRows(buffer *b) {
                 num = i + 1;
             }
 
-            int nlen = snprintf(num_buf, sizeof(num_buf), "\x1b[90m%4d \x1b[m", num);
+            int nlen = snprintf(num_buf, sizeof(num_buf), "\x1b[90m%4d \x1b[39m", num);
             bufferAppend(b, num_buf, nlen);
         }
 
@@ -161,32 +162,28 @@ void bufferAppendRows(buffer *b) {
                     else {
                         if (hl_active) 
                         {
-                            bufferAppend(b, "\x1b[m", 3);
+                            bufferAppend(b, "\x1b[27m", 5);
                             hl_active = false;
                         }
 
                         int current_hl = (row->hl) ? row->hl[cx] : HL_DEFAULT;
+                        const char* color_code = NULL;
 
-                        if (current_hl == HL_DEFAULT) {
-                            bufferAppend(b, "\x1b[37m", 5);
-                        } else if (current_hl == HL_STRING) {
-                            bufferAppend(b, "\x1b[92m", 5);
-                        } else if (current_hl == HL_NUMBER) {
-                            bufferAppend(b, "\x1b[93m", 5);
-                        } else if (current_hl == HL_TYPE) {
-                            bufferAppend(b, "\x1b[95m", 5);
-                        } else if (current_hl == HL_STRUCT) {
-                            bufferAppend(b, "\x1b[35m", 5);
-                        } else if (current_hl == HL_CONTROL) {
-                            bufferAppend(b, "\x1b[91m", 5);
-                        } else if (current_hl == HL_STORAGE) {
-                            bufferAppend(b, "\x1b[94m", 5);
-                        } else if (current_hl == HL_QUALIFIER) {
-                            bufferAppend(b, "\x1b[96m", 5);
-                        } else if (current_hl == HL_SPECIAL) {
-                            bufferAppend(b, "\x1b[95m", 5);
-                        } else if (current_hl == HL_BRACKETS) {
-                            bufferAppend(b, "\x1b[33m", 5);
+                        switch (current_hl) {
+                            case HL_DEFAULT:   color_code = currentTheme->hl_default; break;
+                            case HL_STRING:    color_code = currentTheme->hl_string; break;
+                            case HL_NUMBER:    color_code = currentTheme->hl_number; break;
+                            case HL_TYPE:      color_code = currentTheme->hl_type; break;
+                            case HL_STRUCT:    color_code = currentTheme->hl_struct; break;
+                            case HL_CONTROL:   color_code = currentTheme->hl_control; break;
+                            case HL_STORAGE:   color_code = currentTheme->hl_storage; break;
+                            case HL_QUALIFIER: color_code = currentTheme->hl_qualifier; break;
+                            case HL_SPECIAL:   color_code = currentTheme->hl_special; break;
+                            case HL_BRACKETS:  color_code = currentTheme->hl_brackets; break;
+                        }
+
+                        if (color_code) {
+                            bufferAppend(b, color_code, strlen(color_code));
                         }
 
                         bufferAppend(b, &row->chars[cx], 1);
@@ -196,7 +193,7 @@ void bufferAppendRows(buffer *b) {
                 }
 
                 if (hl_active) {
-                    bufferAppend(b, "\x1b[m", 3);
+                    bufferAppend(b, "\x1b[27m", 5);
                 }
 
             }
@@ -216,7 +213,9 @@ void bufferAppendRows(buffer *b) {
             }
 
             else {
+                bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
                 bufferAppend(b, "~", 1);
+                bufferAppend(b, "\x1b[39m", 5);
             }
         }
 
@@ -227,6 +226,8 @@ void bufferAppendRows(buffer *b) {
     if (E.mode == COMMANDLINE_MODE)
     {
         bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+        bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
+        bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
 
         if (E.lastrow && E.lastrow->chars) {
             int cmd_len = E.lastrow->len - E.commandlineColloff;
@@ -238,6 +239,8 @@ void bufferAppendRows(buffer *b) {
 
             bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
         }
+
+        bufferAppend(b, "\x1b[39;49m", 7);
     }
 
     else if (strcmp(E.statusmsg, "") != 0)
@@ -248,11 +251,12 @@ void bufferAppendRows(buffer *b) {
         int msglen = strlen(E.statusmsg);
         if (msglen > E.screenWidth) msglen = E.screenWidth;
         bufferAppend(b, E.statusmsg, msglen);
-        bufferAppend(b, "\x1b[m", 3); 
+        bufferAppend(b, "\x1b[39m", 5); 
     }
     
-    else {
-        bufferAppend(b, "\x1b[7m", 4);    
+    else if (E.statusSize != STATUS_OFF) {
+        bufferAppend(b, currentTheme->status_bg, strlen(currentTheme->status_bg));
+        bufferAppend(b, currentTheme->status_fg, strlen(currentTheme->status_fg));
         char status[80];
         int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
             E.filename ? E.filename : "[No Name]", 
@@ -296,7 +300,7 @@ void bufferAppendRows(buffer *b) {
             }
         }
 
-        bufferAppend(b, "\x1b[m", 3);
+        bufferAppend(b, "\x1b[39;49m", 7);
     }
 }
 
@@ -305,6 +309,12 @@ void refreshScreen(void) {
 
     bufferAppend(&b, HIDE_CURSOR, HIDE_CURSOR_B);
     bufferAppend(&b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+
+    const char *bg = themes[E.theme].bg_color;
+    bufferAppend(&b, bg, strlen(bg));
+
+    bufferAppend(&b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+
     bufferAppendRows(&b);
 
     char buf[32];
