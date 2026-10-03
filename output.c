@@ -70,6 +70,157 @@ void scrollAtCommandLine(void)
     }
 }
 
+void drawLineNumber(buffer *b, ThemePalette *currentTheme, int i)
+{
+    bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
+    bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
+
+    char num_buf[32];
+    int num = 0;
+
+    if (E.showLineNumbers && E.showRLineNumbers) {
+        if (i == E.cy) {
+            num = i + 1;
+        } else
+        {
+            num = i - E.cy;
+            if (num < 0) num = -num;
+        }
+    }
+
+    else if (E.showRLineNumbers) {
+        num = i - E.cy;
+        if (num < 0) num = -num;
+    
+    } 
+
+    else {
+        num = i + 1;
+    }
+
+    int nlen = snprintf(num_buf, sizeof(num_buf), "%4d ", num);
+    bufferAppend(b, num_buf, nlen);
+}
+
+void drawTildasAndGreeting(buffer *b, ThemePalette *currentTheme, int i)
+{
+    char buf[128];
+
+    bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
+    bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
+
+    // The first line should never have ~
+    if (E.numrows == 0 && i == 0) {
+    }
+
+    else if (E.numrows == 0 && i == E.screenHeight / 2) {
+        appendCentered(b, "Rune - terminal based editor");
+    }
+
+    else if(E.numrows == 0 && i == E.screenHeight /2 + 1) {
+        snprintf(buf, sizeof(buf), "Version %s", EDITOR_VERSION);
+        appendCentered(b,buf);
+    }
+
+    else {
+        bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
+        bufferAppend(b, "~", 1);
+    }
+}
+
+void drawCommandLine(buffer *b, ThemePalette *currentTheme)
+{
+    bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+    bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
+    bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
+
+    if (E.lastrow && E.lastrow->chars) {
+        int cmd_len = E.lastrow->len - E.commandlineColloff;
+
+        if (cmd_len > E.screenWidth)
+            cmd_len = E.screenWidth;
+
+        if (cmd_len < 0) cmd_len = 0;
+
+        bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
+    }
+}
+
+void drawCommandLineMsg(buffer *b, ThemePalette *currentTheme)
+{
+    bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+    bufferAppend(b, currentTheme->message_fg, strlen(currentTheme->message_fg));
+    bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
+
+
+    int msglen = strlen(E.statusmsg);
+    if (msglen > E.screenWidth) msglen = E.screenWidth;
+    bufferAppend(b, E.statusmsg, msglen);
+}
+
+void drawStatusMsg(buffer *b, ThemePalette *currentTheme)
+{
+    bufferAppend(b, currentTheme->status_bg, strlen(currentTheme->status_bg));
+    bufferAppend(b, currentTheme->status_fg, strlen(currentTheme->status_fg));
+    
+    bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
+
+    char left_str[128];
+    char right_str[128];
+    int left_len, right_len;
+
+    char *mode_str;
+    if (E.mode == NORMAL_MODE)
+        mode_str = "--NORMAL--";
+    else if (E.mode == INSERT_MODE)
+        mode_str = "--INSERT--";
+    else
+        mode_str = "--VISUAL--";
+
+    left_len = snprintf(left_str, sizeof(left_str), " %.20s%s",
+        E.filename ? E.filename : "[No Name]",
+        E.dirty > 0 ? " [+]" : "    "
+    );
+
+    if (E.statusSize == STATUS_MINIMAL)
+    {
+        right_len = 0;
+        right_str[0] = '\0';
+    }
+    else
+    {
+        right_len = snprintf(right_str, sizeof(right_str), "%d lines | Ln %d, Col %d   %s ",
+            E.numrows,
+            E.cy + 1,
+            E.cx + 1,
+            mode_str
+        );
+    }
+
+    if (left_len > E.screenWidth) left_len = E.screenWidth;
+    bufferAppend(b, left_str, left_len);
+
+    if (E.statusSize != STATUS_MINIMAL)
+    {
+        int spaces = E.screenWidth - left_len - right_len;
+
+        while (spaces > 0)
+        {
+            bufferAppend(b, " ", 1);
+            spaces--;
+        }
+
+        if (left_len + right_len > E.screenWidth) {
+            right_len = E.screenWidth - left_len;
+            if (right_len < 0) right_len = 0;
+        }
+
+        if (right_len > 0) {
+            bufferAppend(b, right_str, right_len);
+        }
+    }
+}
+
 void bufferAppendRows(buffer *b) {
     if (E.mode != COMMANDLINE_MODE)
     {
@@ -81,39 +232,21 @@ void bufferAppendRows(buffer *b) {
         scrollAtCommandLine();
     }
 
-    char buf[128];
     ThemePalette *currentTheme = &themes[E.theme];
+    int lastHl = -1;
+    
+    bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
+    bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
+
+    bufferAppend(b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+
     for (int i = E.rowoff; i < E.screenHeight+E.rowoff; i++) {
         int numWidth = 0;
 
         if ((E.showLineNumbers || E.showRLineNumbers) && (E.numrows > i || (E.numrows == 0 && i == 0)))
         {
+            drawLineNumber(b, currentTheme, i);
             numWidth = 5;
-            char num_buf[32];
-            int num = 0;
-
-            if (E.showLineNumbers && E.showRLineNumbers) {
-                if (i == E.cy) {
-                    num = i + 1;
-                } else
-                {
-                    num = i - E.cy;
-                    if (num < 0) num = -num;
-                }
-            }
-
-            else if (E.showRLineNumbers) {
-                num = i - E.cy;
-                if (num < 0) num = -num;
-            
-            } 
-        
-            else {
-                num = i + 1;
-            }
-
-            int nlen = snprintf(num_buf, sizeof(num_buf), "\x1b[90m%4d \x1b[39m", num);
-            bufferAppend(b, num_buf, nlen);
         }
 
         if (E.numrows > i) {
@@ -153,7 +286,7 @@ void bufferAppendRows(buffer *b) {
 
                     if (in_hl) {
                         if (!hl_active) {
-                            bufferAppend(b, "\x1b[7m", 4);
+                            bufferAppend(b, REVERSE_COLORS, REVERSE_COLORS_B);
                             hl_active = true;
                         }
                         bufferAppend(b, &row->chars[cx], 1);
@@ -162,61 +295,48 @@ void bufferAppendRows(buffer *b) {
                     else {
                         if (hl_active) 
                         {
-                            bufferAppend(b, "\x1b[27m", 5);
+                            bufferAppend(b, OFF_REVERSE_COLOR, OFF_REVERSE_COLOR_B);
                             hl_active = false;
                         }
 
                         int current_hl = (row->hl) ? row->hl[cx] : HL_DEFAULT;
-                        const char* color_code = NULL;
 
-                        switch (current_hl) {
-                            case HL_DEFAULT:   color_code = currentTheme->hl_default; break;
-                            case HL_STRING:    color_code = currentTheme->hl_string; break;
-                            case HL_NUMBER:    color_code = currentTheme->hl_number; break;
-                            case HL_TYPE:      color_code = currentTheme->hl_type; break;
-                            case HL_STRUCT:    color_code = currentTheme->hl_struct; break;
-                            case HL_CONTROL:   color_code = currentTheme->hl_control; break;
-                            case HL_STORAGE:   color_code = currentTheme->hl_storage; break;
-                            case HL_QUALIFIER: color_code = currentTheme->hl_qualifier; break;
-                            case HL_SPECIAL:   color_code = currentTheme->hl_special; break;
-                            case HL_BRACKETS:  color_code = currentTheme->hl_brackets; break;
+                        if (current_hl != lastHl)
+                        {
+                            const char* color_code = NULL;
+
+                            switch (current_hl) {
+                                case HL_DEFAULT:   color_code = currentTheme->hl_default; break;
+                                case HL_STRING:    color_code = currentTheme->hl_string; break;
+                                case HL_NUMBER:    color_code = currentTheme->hl_number; break;
+                                case HL_TYPE:      color_code = currentTheme->hl_type; break;
+                                case HL_STRUCT:    color_code = currentTheme->hl_struct; break;
+                                case HL_CONTROL:   color_code = currentTheme->hl_control; break;
+                                case HL_STORAGE:   color_code = currentTheme->hl_storage; break;
+                                case HL_QUALIFIER: color_code = currentTheme->hl_qualifier; break;
+                                case HL_SPECIAL:   color_code = currentTheme->hl_special; break;
+                                case HL_BRACKETS:  color_code = currentTheme->hl_brackets; break;
+                            }
+
+                            if (color_code) {
+                                bufferAppend(b, color_code, strlen(color_code));
+                            }
                         }
 
-                        if (color_code) {
-                            bufferAppend(b, color_code, strlen(color_code));
-                        }
+                        lastHl = current_hl;
 
                         bufferAppend(b, &row->chars[cx], 1);
-                        
-                        bufferAppend(b, "\x1b[39m", 5);
                     }
                 }
 
                 if (hl_active) {
-                    bufferAppend(b, "\x1b[27m", 5);
+                    bufferAppend(b, OFF_REVERSE_COLOR, OFF_REVERSE_COLOR_B);
                 }
 
             }
         }
         else {
-            // The first line should never have ~
-            if (E.numrows == 0 && i == 0) {
-            }
-
-            else if (E.numrows == 0 && i == E.screenHeight / 2) {
-                appendCentered(b, "Rune - terminal based editor");
-            }
-
-            else if(E.numrows == 0 && i == E.screenHeight /2 + 1) {
-                snprintf(buf, sizeof(buf), "Version %s", EDITOR_VERSION);
-                appendCentered(b,buf);
-            }
-
-            else {
-                bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
-                bufferAppend(b, "~", 1);
-                bufferAppend(b, "\x1b[39m", 5);
-            }
+            drawTildasAndGreeting(b, currentTheme, i);
         }
 
         bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
@@ -225,82 +345,16 @@ void bufferAppendRows(buffer *b) {
 
     if (E.mode == COMMANDLINE_MODE)
     {
-        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
-        bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
-        bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
-
-        if (E.lastrow && E.lastrow->chars) {
-            int cmd_len = E.lastrow->len - E.commandlineColloff;
-
-            if (cmd_len > E.screenWidth)
-                cmd_len = E.screenWidth;
-
-            if (cmd_len < 0) cmd_len = 0;
-
-            bufferAppend(b, &E.lastrow->chars[E.commandlineColloff], cmd_len);
-        }
-
-        bufferAppend(b, "\x1b[39;49m", 7);
+        drawCommandLine(b, currentTheme);
     }
 
     else if (strcmp(E.statusmsg, "") != 0)
     {
-        bufferAppend(b, CLEAR_LINE, CLEAR_LINE_B);
-        bufferAppend(b, "\x1b[92m", 5);
-
-        int msglen = strlen(E.statusmsg);
-        if (msglen > E.screenWidth) msglen = E.screenWidth;
-        bufferAppend(b, E.statusmsg, msglen);
-        bufferAppend(b, "\x1b[39m", 5); 
+        drawCommandLineMsg(b, currentTheme);
     }
     
     else if (E.statusSize != STATUS_OFF) {
-        bufferAppend(b, currentTheme->status_bg, strlen(currentTheme->status_bg));
-        bufferAppend(b, currentTheme->status_fg, strlen(currentTheme->status_fg));
-        char status[80];
-        int len = snprintf(status, sizeof(status), " %.20s - %d lines | Ln %d, Col %d",
-            E.filename ? E.filename : "[No Name]", 
-            E.numrows, 
-            E.cy + 1, 
-            E.cx + 1
-        );
-
-        if (len > E.screenWidth) len = E.screenWidth;
-        bufferAppend(b, status, len);
-
-        char *mode_str;
-
-        if (E.mode == NORMAL_MODE)
-        {
-            mode_str = "--NORMAL--";
-        }
-
-        else if (E.mode == INSERT_MODE)
-        {
-            mode_str = "--INSERT--";
-        }
-
-        else
-        {
-            mode_str = "--VISUAL--";
-        }
-
-        int rlen = strlen(mode_str);
-        while (len < E.screenWidth) {
-            if (E.screenWidth - len == rlen)
-            {
-                bufferAppend(b, mode_str, rlen);
-                break;
-            }
-
-            else 
-            {
-                bufferAppend(b, " ", 1);
-                len++;
-            }
-        }
-
-        bufferAppend(b, "\x1b[39;49m", 7);
+        drawStatusMsg(b, currentTheme);
     }
 }
 
@@ -308,11 +362,6 @@ void refreshScreen(void) {
     buffer b = BUFFER_INIT;
 
     bufferAppend(&b, HIDE_CURSOR, HIDE_CURSOR_B);
-    bufferAppend(&b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
-
-    const char *bg = themes[E.theme].bg_color;
-    bufferAppend(&b, bg, strlen(bg));
-
     bufferAppend(&b, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
 
     bufferAppendRows(&b);

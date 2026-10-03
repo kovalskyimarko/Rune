@@ -30,6 +30,16 @@
 #define ENTER_ALT_BUFF_B sizeof(ENTER_ALT_BUFF) - 1
 #define LEAVE_ALT_BUFF "\x1b[?1049l"
 #define LEAVE_ALT_BUFF_B sizeof(LEAVE_ALT_BUFF) - 1
+#define CLEAR_ALL_COLLORS "\x1b[0m"
+#define CLEAR_ALL_COLLORS_B sizeof(CLEAR_ALL_COLLORS) - 1
+#define REVERSE_COLORS "\x1b[7m"
+#define REVERSE_COLORS_B sizeof(REVERSE_COLORS) - 1
+#define OFF_REVERSE_COLOR "\x1b[27m"
+#define OFF_REVERSE_COLOR_B sizeof(OFF_REVERSE_COLOR) -1
+#define DEFAULT_FG "\x1b[39m"
+#define DEFAULT_FG_B sizeof(DEFAULT_FG) - 1
+#define DEFAULT_BG "\x1b[49m"
+#define DEFAULT_BG_B sizeof(DEFAULT_BG) - 1
 
 #define u_i8 u_int8_t
 
@@ -87,6 +97,7 @@ typedef struct {
     const char *hl_brackets;
     const char *status_bg;
     const char *status_fg;
+    const char *message_fg;
 } ThemePalette;
 
 extern ThemePalette themes[NUM_THEMES];

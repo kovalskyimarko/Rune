@@ -69,11 +69,6 @@ int main(int argc, char** argv) {
     init();
     loadRCFile();
 
-    if (E.statusSize == STATUS_OFF)
-    {
-        E.screenHeight += 1;
-    }
-
     enableAltBuff();
     enableRawMode();
 

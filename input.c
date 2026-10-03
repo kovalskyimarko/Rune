@@ -538,8 +538,10 @@ void processKey(int c) {
 
     if (c == CTRL_KEY('q'))
     {
+        write(STDOUT_FILENO, CLEAR_ALL_COLLORS, CLEAR_ALL_COLLORS_B);
         write(STDOUT_FILENO, CLEAR_SCREEN, CLEAR_SCREEN_B);
         write(STDOUT_FILENO, MOVE_CURSOR_HOME, MOVE_CURSOR_HOME_B);
+        write(STDOUT_FILENO, SHOW_CURSOR, SHOW_CURSOR_B);
         exit(0);
     }
 
