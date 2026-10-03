@@ -111,6 +111,8 @@ typedef struct token
 
 void parse(erow* row)
 {
+    if (!E.syntax) return;
+
     if (row->len == 0) {
         if (row->hl) free(row->hl);
         row->hl = NULL;

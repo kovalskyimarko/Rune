@@ -36,6 +36,7 @@ void init(void) {
     E.tabSize = 4;
     E.statusSize = STATUS_FULL;
     E.autoindent = false;
+    E.syntax = true;
 }
 
 void cleanup(void) {

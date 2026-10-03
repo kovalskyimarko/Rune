@@ -86,6 +86,13 @@ void loadRCFile(void)
             } else if (strcasecmp(option, "on") == 0) {
                 E.autoindent = true;
             }
+        } else if (strcmp(command, "syntax") == 0) {
+            if (strcmp(option, "off") == 0) {
+                E.syntax = false;
+
+            } else if (strcmp(option, "on")  == 0) {
+                E.syntax = true;
+            }
         }
     }
 

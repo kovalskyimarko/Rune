@@ -105,6 +105,7 @@ void moveCursorKeyBinds(int c)
         case '$':
             if (E.numrows > 0)
                 E.cx = E.row[E.cy].len;
+            if (c == 'A') E.mode = INSERT_MODE;
             E.normalModeMult = 0;
             break;
             
@@ -542,9 +543,11 @@ void processNormalModeKey(int c)
     switch (c)
     {
         case 'i':
+        case 'a':
             E.normalModeMult = 0;
             E.pendingAction = '\0';
             E.mode = INSERT_MODE;
+            if (c == 'a' && E.numrows != 0 && E.cx < E.row[E.cy].len) E.cx++;
             break;
         case 'v':
             if (E.numrows == 0) return;
@@ -571,6 +574,7 @@ void processNormalModeKey(int c)
         case '6': case '7': case '8': case '9':
         case 'w': case 'e': case 'b':
         case 'h': case 'j': case 'k': case 'l':
+        case 'G':
             moveCursorKeyBinds(c);
             break;
         
@@ -777,8 +781,7 @@ void processVisualModeKey(int c)
         case 'x': {
             if (E.numrows == 0) return;
             if (E.row[E.cy].len == 0) return;
-
-            copy();
+            if (c == 'x') copy();
 
             int startY = E.vStartcy;
             int endY =   E.cy;

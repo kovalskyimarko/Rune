@@ -155,6 +155,7 @@ struct editorConfig {
     int tabSize;
     STATUS_LINE_SIZE statusSize;
     bool autoindent;
+    bool syntax;
 };
 
 extern struct editorConfig E;
