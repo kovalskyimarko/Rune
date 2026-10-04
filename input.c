@@ -127,6 +127,21 @@ void baseDeleteChar(int x, erow* row)
     parse(row);
 }
 
+void baseDeleteString(int startCx, int endCx, erow* row)
+{
+    if (startCx < 0 || startCx >= row->len || endCx <= startCx) return;
+    if (endCx > row->len) endCx = row->len;
+
+    memmove(
+        &row->chars[startCx],
+        &row->chars[endCx],
+        row->len - endCx + 1
+    );
+
+    row->len -= endCx - startCx;
+    parse(row);
+}
+
 void mergeLines(int lineToDeleteY, int lineToMergeWithY)
 {
     if (lineToDeleteY != lineToMergeWithY + 1) return;
@@ -152,6 +167,8 @@ void deleteCharBeforeCursor(void) {
     if (E.cx == 0) {
         if (E.cy == 0) return;
 
+        createAction(AC_DELETE, E.row[E.cy - 1].len, E.cy - 1, 0, E.cy, "\n");
+
         int newCursorX = E.row[E.cy - 1].len;
         mergeLines(E.cy, E.cy - 1);
         E.cy--;
@@ -160,6 +177,9 @@ void deleteCharBeforeCursor(void) {
         E.dirty++;
         return;
     }
+
+    char buf[2] = { E.row[E.cy].chars[E.cx - 1], '\0' };
+    createAction(AC_DELETE, E.cx - 1, E.cy, E.cx, E.cy, buf);
 
     baseDeleteChar(E.cx-1, &E.row[E.cy]);
     E.dirty++;
@@ -174,12 +194,15 @@ void deleteCharAtCursor(void) {
     if (E.cx == row->len) {
         if (E.cy + 1 == E.numrows) return;
         
+        createAction(AC_DELETE, E.cx, E.cy, 0, E.cy + 1, "\n");
         mergeLines(E.cy + 1, E.cy);
 
         E.dirty++;
         return;
     }
     
+    char buf[2] = { row->chars[E.cx], '\0' };
+    createAction(AC_DELETE, E.cx, E.cy, E.cx + 1, E.cy, buf);
     baseDeleteChar(E.cx, &E.row[E.cy]);
     E.dirty++;
 }
@@ -279,6 +302,24 @@ void splitRow(void) {
     if (spaces < E.tabSize) spaces = 0;
     if (spaces % E.tabSize != 0) spaces = spaces - spaces % E.tabSize;
 
+    if (burger) {
+        char *buf = xmalloc(spaces + E.tabSize + spaces + 3);
+        buf[0] = '\n';
+        memset(buf + 1, ' ', spaces + E.tabSize);
+        buf[spaces + E.tabSize + 1] = '\n';
+        memset(buf + spaces + E.tabSize + 2, ' ', spaces);
+        buf[spaces + E.tabSize + spaces + 2] = '\0';
+        createAction(AC_INSERT, E.cx, E.cy, spaces, E.cy + 2, buf);
+        free(buf);
+    } else {
+        char *buf = xmalloc(spaces + 2);
+        buf[0] = '\n';
+        memset(buf + 1, ' ', spaces);
+        buf[spaces + 1] = '\0';
+        createAction(AC_INSERT, E.cx, E.cy, spaces, E.cy + 1, buf);
+        free(buf);
+    }
+
     char *right = xmalloc(spaces + (row->len - E.cx) + 1);
 
     memset(right, ' ', spaces);
@@ -359,6 +400,12 @@ void insertString(const char *s, int len) {
     if (E.numrows == 0) {
         insertRow(0);
     }
+
+    char *temp = xmalloc(len + 1);
+    memcpy(temp, s, len);
+    temp[len] = '\0';
+    createAction(AC_INSERT, E.cx, E.cy, E.cx + len, E.cy, temp);
+    free(temp);
 
     erow* row = &E.row[E.cy];
 

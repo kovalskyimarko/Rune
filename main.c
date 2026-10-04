@@ -37,6 +37,7 @@ void init(void) {
     E.statusSize = STATUS_FULL;
     E.autoindent = false;
     E.syntax = true;
+    E.isUndoing = false;
 }
 
 void cleanup(void) {
@@ -68,6 +69,7 @@ void cleanup(void) {
 
 int main(int argc, char** argv) {
     init();
+    initActions();
     loadRCFile();
 
     enableAltBuff();

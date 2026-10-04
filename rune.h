@@ -69,6 +69,12 @@ typedef enum {
     VISUAL_MODE
 } MODES;
 
+typedef enum
+{
+    AC_DELETE,
+    AC_INSERT
+} Action_Type;
+
 typedef enum {
     STATUS_MINIMAL,
     STATUS_FULL,
@@ -156,6 +162,7 @@ struct editorConfig {
     STATUS_LINE_SIZE statusSize;
     bool autoindent;
     bool syntax;
+    bool isUndoing;
 };
 
 extern struct editorConfig E;
@@ -174,7 +181,8 @@ void handleSigwinch(int sig);
 void processNormalModeKey(int c);
 void processVisualModeKey(int c);
 void processLastRowKeys(int c);
-void processBufferKey(int c) ;
+void processBufferKey(int c);
+void normalize(int* startX, int* startY, int* endX, int* endY);
 
 // input.c
 void splitRow(void);
@@ -185,11 +193,14 @@ void insertCharAtCommandLine(int c);
 void deleteCharAtCursorAtCommandLine(void);
 void deleteCharBeforeCursor(void);
 void deleteCharAtCursor(void);
+void baseDeleteString(int startCx, int endCx, erow* row);
+void baseInsertString(const char* s, int len, erow* row, int x);
 void insertChar(int c);
 void insertString(const char *s, int len);
 int readKey(void);
 void find(char* needle, bool reverse);
 void processKey(int c);
+void insertRow(int at);
 void insertRowWithText(int at, const char *s, size_t len);
 void deleteRow(int at);
 void mergeLines(int lineToDeleteY, int lineToMergeWithY);
@@ -222,6 +233,14 @@ bool ex_bang(const char* args);
 
 // config.c
 void loadRCFile(void);
+
+// action.c
+void initActions(void);
+void createAction(Action_Type type, int cxstart, int cystart, int cxend, int cyend, char* text);
+void redo(void);
+void undo(void);
+void insertTextAt(int x, int y, const char* text);
+void deleteRange(int sx, int sy, int ex, int ey);
 
 // main.c
 void init(void);

@@ -1,6 +1,6 @@
 #include "rune.h"
 
-void baseDeleteString(int x, int len, erow* row) {
+void baseDeleteStringWithLen(int x, int len, erow* row) {
     if (x < 0 || x >= row->len || len <= 0) return;
     if (x + len > row->len) len = row->len - x;
 
@@ -142,39 +142,37 @@ void moveCursorKeyBinds(int c)
             if (E.pendingAction == 'd' && E.mode != VISUAL_MODE)
             {
                 int mult = E.normalModeMult == 0 ? 1 : E.normalModeMult;
+                erow* row = &E.row[E.cy];
+                int end_cx = E.cx;
+
                 for (int i = 0; i < mult; i++)
                 {
-                    erow* row = &E.row[E.cy];
+                    if (end_cx >= row->len) break; 
 
-                    if (E.cx >= row->len) {
-                        E.pendingAction = '\0'; 
-                        E.normalModeMult = 0;
-                        break; 
-                    }
-
-                    int start = E.cx;
-                    int end;
-
-                    if (row->chars[E.cx] == ' ')
+                    if (row->chars[end_cx] == ' ')
                     {
-                        while (E.cx < row->len && row->chars[E.cx] == ' ') E.cx++;
-                        
-                        end = E.cx;
-                        
-                        baseDeleteString(start, end - start, row);
-                        E.cx = start;
-                        E.pendingAction = '\0';
+                        while (end_cx < row->len && row->chars[end_cx] == ' ') end_cx++;
+                    }
+                    else
+                    {
+                        while (end_cx < row->len && row->chars[end_cx] != ' ') end_cx++;
+                        while (end_cx < row->len && row->chars[end_cx] == ' ') end_cx++;
+                    }
+                }
 
-                        continue;;
+                int len_to_delete = end_cx - E.cx;
+
+                if (len_to_delete > 0)
+                {
+                    if (!E.isUndoing) {
+                        char *temp = xmalloc(len_to_delete + 1);
+                        memcpy(temp, &row->chars[E.cx], len_to_delete);
+                        temp[len_to_delete] = '\0';
+                        createAction(AC_DELETE, E.cx, E.cy, E.cx + len_to_delete, E.cy, temp);
+                        free(temp);
                     }
 
-                    while (E.cx < row->len && row->chars[E.cx] != ' ') E.cx++;
-                    while (E.cx < row->len && row->chars[E.cx] == ' ') E.cx++;
-                    
-                    end = E.cx;
-                    
-                    baseDeleteString(start, end - start, row);
-                    E.cx = start;
+                    baseDeleteStringWithLen(E.cx, len_to_delete, row);
                 }
 
                 E.pendingAction = '\0';
@@ -640,6 +638,12 @@ void processNormalModeKey(int c)
 
                     if (E.numrows == 1)
                     {
+                        if (!E.isUndoing) {
+                            char *temp = xstrdup(row->chars);
+                            createAction(AC_DELETE, 0, E.cy, row->len, E.cy, temp);
+                            free(temp);
+                        }
+
                         E.dirty += row->len;
                         free(row->chars);
                         row->len = 0;
@@ -651,6 +655,25 @@ void processNormalModeKey(int c)
 
                     else
                     {
+                        int len = row->len;
+                        char *temp = xmalloc(len + 2);
+
+                        if (E.cy < E.numrows - 1)
+                        {
+                            memcpy(temp, row->chars, len);
+                            temp[len] = '\n';
+                            temp[len + 1] = '\0';
+                            createAction(AC_DELETE, 0, E.cy, 0, E.cy + 1, temp);
+                        }
+                        else
+                        {
+                            temp[0] = '\n';
+                            memcpy(temp + 1, row->chars, len);
+                            temp[len + 1] = '\0';
+                            createAction(AC_DELETE, E.row[E.cy - 1].len, E.cy - 1, len, E.cy, temp);
+                        }
+
+                        free(temp);
                         deleteRow(E.cy);
 
                         if (E.cy >= E.numrows)
@@ -747,6 +770,14 @@ void processNormalModeKey(int c)
                 showMessageAtCommandLine(msg, strlen(msg));
             }
             break;
+        
+        case 'u':
+            undo();
+            break;
+
+        case 'U':
+            redo();
+            break;
 
         case ':':
         case '/':
@@ -781,7 +812,7 @@ void processVisualModeKey(int c)
         case 'x': {
             if (E.numrows == 0) return;
             if (E.row[E.cy].len == 0) return;
-            if (c == 'x') copy();
+            copy();
 
             int startY = E.vStartcy;
             int endY =   E.cy;
@@ -789,55 +820,14 @@ void processVisualModeKey(int c)
             int startX = E.vStartcx;
             int endX =   E.cx;
 
-            int old_cy = E.cy;
-
             normalize(&startX, &startY, &endX, &endY);
 
-            E.cx = startX;
-            E.cy = startY;
-            
-            if (startY < endY)
-            {
-                E.row[startY].chars = xrealloc(E.row[startY].chars, startX + 1);
+            int endXExclusive = endX + 1;
+            if (endXExclusive > E.row[endY].len) endXExclusive = E.row[endY].len;
 
-                E.row[startY].len = startX;
-                E.row[startY].chars[startX] = '\0';
-
-                for (int i = startY + 1; i < endY; i++) {
-                    free(E.row[i].chars);
-                    if (E.row[i].hl)
-                        free(E.row[i].hl);
-                }
-
-                memmove(
-                    &E.row[startY + 1],
-                    &E.row[endY],
-                    sizeof(erow) * (E.numrows - endY)
-                );
-
-                E.numrows -= endY - startY - 1;
-
-                erow *row = &E.row[startY + 1];
-
-                memmove(
-                    row->chars,
-                    row->chars + endX + 1,
-                    row->len - endX
-                );
-
-                row->len -= endX + 1;
-                row->chars[row->len] = '\0';
-
-                mergeLines(startY + 1, startY);
-                E.dirty++;
-            }
-
-            else
-            {
-                baseDeleteString(startX, endX - startX + 1, &E.row[E.cy]);
-                E.cx = startX;
-                E.cy = old_cy;
-            }
+            createAction(AC_DELETE, startX, startY, endXExclusive, endY, E.yankbuff);
+            deleteRange(startX, startY, endXExclusive, endY);
+            E.dirty++;
 
             break;
         }
