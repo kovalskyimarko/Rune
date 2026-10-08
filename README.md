@@ -24,6 +24,7 @@ This project is a personal learning endeavor to understand low-level text editin
 * Highlighting for C supports four different themes (Expanded later)
 * File handling: save, open files. With either :e (to open/create), :w (save file), ./rune filename (to open from terminal)
 * .runerc config hadnles personal user preferences (Expanded later)
+* Undo/Redo. Using one Actions list which contains its type, x pos start, y pos start, x and y pos end, text. If pressed undo the currentIndex of the list moves back and if user after that does another action the actions after that index are rewritten. My undo history currently records individual buffer operations. Therefore a command such as `3dw`produces three history entries. Grouping compound commands into atomic undo transactions would require a separate transaction layer, which I haven't implemented.
 
 ---
 
@@ -46,16 +47,16 @@ Run it:
 ---
 
 ## NORMAL_MODE
-* Movement with h,j,k,l: h - move cursor left, j - move cursor down, k - move cursor up, l - move cursor right
-* Movement with w,e,b: w - move forward to the start of the word, e - move to the end of the word, b - move back to the start of the word 
-* Movement with $,A,0,I,^: $ - move cursor to the end of the line, A - move cursor to the end of the line, 0 - move cursor to the start of the line, I - move cursor to the first non-blank character and switch to INSERT_MODE, ^ - move cursor to the first non-blank character
-* Deletion with d prefix: Currently only dw, and dd added. dw - delete a whole word, dd - delete a whole line
-* Non-blocking number multiplier: If before w is pressed 3, cursor is moving to the start of 3 word. Non-blocking because it just saves multiplier into global variable, and not waits for another input. Supports certain keybinds after
-* Search with f: search a character from your cursor in your current row
-* Movement with G: number + G - brings you to row with that number
-* Keybding y,x: copy, remove character on the cursor
-* Paste with p or P: paste text from the local yankbuffer before or after the cursor
-* Progress through search with n/N: if the local search buffer has text, pressing n or N will progress search forward or backwards accordingly
+* Movement with `h`,`j`,`k`,`l`: `h` - move cursor left, `j` - move cursor down, `k` - move cursor up, `l` - move cursor right
+* Movement with `w`,`e`,`b`: `w `- move forward to the start of the word, `e` - move to the end of the word, `b` - move back to the start of the word 
+* Movement with `$`,`A`,`0`,`I`,`^`: `$` - move cursor to the end of the line, `A` - move cursor to the end of the line, `0` - move cursor to the start of the line, `I` - move cursor to the first non-blank character and switch to INSERT_MODE, `^ `- move cursor to the first non-blank character
+* Deletion with `d` prefix: Currently only `dw`, and `dd` are added. `dw` - delete a whole word, `dd` - delete a whole line
+* Non-blocking number multiplier: If before `w` is pressed `3`, cursor is moving to the start of 3 word. Non-blocking because it just saves multiplier into global variable, and not waits for another input. Supports certain keybinds after
+* Search with `f`: search a character from your cursor in your current row
+* Movement with `G`: number + `G` - brings you to row with that number
+* Keybinds `y`, `x`: copy, remove character on the cursor
+* Paste with `p` or `P`: paste text from the local yankbuffer before or after the cursor
+* Progress through search with `n`/`N`: if the local search buffer has text, pressing `n` or `N` will progress search forward or backwards accordingly
 
 ## VISUAL_MODE
 * y,x,d - copy or cut or delete selected text
@@ -87,6 +88,7 @@ Run it:
 * `tab_size <number>` - how many spaces is one tab. By default 4.
 * `status_line full/minimum/off` - make status line write full info, only file name and whether its modified, or turn it off completely. By default its full
 * `autoindent on/of` - turn on or off autoindent. By default is off
+* `ignorecase on/of` - ignore case while searching with /
 
 ---
 
@@ -101,6 +103,7 @@ Run it:
 * `syntax_parser.c` - Receives erow, and expands its highlight array, putting there a token for each letter
 * `config.c` - Loads .runerc from home directory, parses it
 * `xmemory.c` - Defines wrappers for malloc, realloc, strdup - xmalloc, xrealloc, xstrdup - which fail if not enough memory
+* `actions.c` - Defines an dynamic array of actions, handles creations, handles undo and redo
 * `rune.h` — Shared structures and definitions 
 * `Makefile` - builds everything
 

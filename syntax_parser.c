@@ -1,30 +1,28 @@
 #include "rune.h"
 
-#include "rune.h"
-
 ThemePalette themes[NUM_THEMES] = {
     { 
         "\x1b[49m", "\x1b[39m", "\x1b[39m", "\x1b[39m", "\x1b[39m", 
         "\x1b[39m", "\x1b[39m", "\x1b[39m", "\x1b[39m", "\x1b[39m", "\x1b[39m",
-        "\x1b[47m", "\x1b[30m", "\x1b[92m"
+        "\x1b[47m", "\x1b[30m", "\x1b[92m", "\x1b[90m"
     },
     
     { 
         "\x1b[49m", "\x1b[37m", "\x1b[92m", "\x1b[93m", "\x1b[95m",
         "\x1b[35m", "\x1b[91m", "\x1b[94m", "\x1b[96m", "\x1b[95m", "\x1b[33m",
-        "\x1b[47m", "\x1b[30m", "\x1b[96m"
+        "\x1b[47m", "\x1b[30m", "\x1b[96m", "\x1b[90m"
     },
     
     { 
         "\x1b[47m", "\x1b[30m", "\x1b[32m", "\x1b[31m", "\x1b[34m", 
         "\x1b[35m", "\x1b[31m", "\x1b[34m", "\x1b[36m", "\x1b[35m", "\x1b[33m",
-        "\x1b[100m", "\x1b[97m", "\x1b[34m"
+        "\x1b[100m", "\x1b[97m", "\x1b[34m", "\x1b[90m"
     },
     
     { 
         "\x1b[40m", "\x1b[32m", "\x1b[32m", "\x1b[32m", "\x1b[32m", 
         "\x1b[32m", "\x1b[32m", "\x1b[32m", "\x1b[32m", "\x1b[32m", "\x1b[32m" ,
-        "\x1b[42m", "\x1b[30m", "\x1b[92m"
+        "\x1b[42m", "\x1b[30m", "\x1b[92m", "\x1b[90m"
     }
 };
 
@@ -100,22 +98,25 @@ int isInArray(const char *str, const char *array[], size_t size)
     return 0;
 }
 
-typedef struct token
-{
-    char* str;
-    int startX;
-    int endX;
-    size_t len;
-    size_t capacity;
-} token;
-
 void parse(erow* row)
 {
     if (!E.syntax) return;
 
+    if (row == E.lastrow) {
+        return;
+    }
+
+    int cy = row - E.row;
+    bool inComment = (cy > 0 && E.row[cy - 1].hlOpenComment);
+
     if (row->len == 0) {
         if (row->hl) free(row->hl);
         row->hl = NULL;
+
+        bool changed = (row->hlOpenComment != inComment);
+        row->hlOpenComment = inComment;
+        
+        if (changed && cy + 1 < E.numrows) parse(&E.row[cy + 1]);
         return;
     }
 
@@ -135,13 +136,45 @@ void parse(erow* row)
     {
         char c = str[i];
 
-        if (insideQuotes)
+        if (inComment)
+        {
+            row->hl[i] = HL_COMMENT;
+            if (c == '*' && i < row->len - 1 && str[i+1] == '/') {
+                row->hl[i+1] = HL_COMMENT;
+                inComment = false;
+                i += 2;
+                continue;
+            }
+            i++;
+            continue;
+        }
+
+        else if (insideQuotes)
         {
             row->hl[i] = HL_STRING;
             if (c == quoteChar) insideQuotes = false;
             i++;
             continue;
         }
+
+        else if (c == '/' && i < row->len - 1 && str[i+1] == '/')
+        {
+            while (i < row->len) {
+                row->hl[i] = HL_COMMENT;
+                i++;
+            }
+            break; 
+        }
+
+        else if (c == '/' && i < row->len - 1 && str[i+1] == '*')
+        {
+            row->hl[i] = HL_COMMENT;
+            row->hl[i+1] = HL_COMMENT;
+            inComment = true;
+            i += 2;
+            continue;
+        }
+
         else if (c == '"' || c == '\'')
         {
             insideQuotes = true;
@@ -205,5 +238,12 @@ void parse(erow* row)
         }
 
         i++;
+    }
+
+    bool changed = (row->hlOpenComment != inComment);
+    row->hlOpenComment = inComment;
+
+    if (changed && cy + 1 < E.numrows) {
+        parse(&E.row[cy + 1]);
     }
 }

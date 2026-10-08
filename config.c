@@ -93,6 +93,13 @@ void loadRCFile(void)
             } else if (strcmp(option, "on")  == 0) {
                 E.syntax = true;
             }
+        } else if (strcmp(command, "ignorecase")  == 0) {
+            if (strcmp(option, "on") == 0)
+            {
+                E.ignoreCase = true;
+            } else if (strcmp(option, "off") == 0) {
+                E.ignoreCase = false;
+            }
         }
     }
 

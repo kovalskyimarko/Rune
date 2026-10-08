@@ -299,8 +299,7 @@ void splitRow(void) {
               row->chars[E.cx - 1] == '{' &&
               row->chars[E.cx] == '}';
 
-    if (spaces < E.tabSize) spaces = 0;
-    if (spaces % E.tabSize != 0) spaces = spaces - spaces % E.tabSize;
+    if (spaces < 0) spaces = 0;
 
     if (burger) {
         char *buf = xmalloc(spaces + E.tabSize + spaces + 3);
@@ -457,7 +456,14 @@ char* baseNextFind(char* needle, int x, int y, int offset, int *res_idx)
             }
         }
 
-        char* result = strstr(startSearch, needle);
+        char *result;
+
+        if (E.ignoreCase)
+        {
+            result = strcasestr(startSearch, needle);
+        } else {
+            result = strstr(startSearch, needle);
+        }
 
         if (result != NULL) 
         {
@@ -489,12 +495,22 @@ char* baseReverseFind(char* needle, int x, int y, int *res_idx)
             char tempChar = startSearch[x];
             startSearch[x] = '\0';
 
-            curr = strstr(startSearch, needle);
+            if (E.ignoreCase)
+            {
+                curr = strcasestr(startSearch, needle);
+            } else {
+                curr = strstr(startSearch, needle);
+            }
 
             while (curr != NULL)
             {
                 last = curr;
-                curr = strstr(curr + 1, needle);
+                if (E.ignoreCase)
+                {
+                    curr = strcasestr(curr+1, needle);
+                } else {
+                    curr = strstr(curr+1, needle);
+                }
             }
 
             startSearch[x] = tempChar;
@@ -502,12 +518,22 @@ char* baseReverseFind(char* needle, int x, int y, int *res_idx)
 
         else
         {
-            curr = strstr(startSearch, needle);
+            if (E.ignoreCase)
+            {
+                curr = strcasestr(startSearch, needle);
+            } else {
+                curr = strstr(startSearch, needle);
+            }
 
             while (curr != NULL)
             {
                 last = curr;
-                curr = strstr(curr + 1, needle);
+                if (E.ignoreCase)
+                {
+                    curr = strcasestr(curr+1, needle);
+                } else {
+                    curr = strstr(curr+1, needle);
+                }
             }
         }
 

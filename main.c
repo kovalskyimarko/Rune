@@ -38,6 +38,7 @@ void init(void) {
     E.autoindent = false;
     E.syntax = true;
     E.isUndoing = false;
+    E.ignoreCase = false;
 }
 
 void cleanup(void) {

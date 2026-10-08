@@ -316,6 +316,7 @@ void bufferAppendRows(buffer *b) {
                                 case HL_QUALIFIER: color_code = currentTheme->hl_qualifier; break;
                                 case HL_SPECIAL:   color_code = currentTheme->hl_special; break;
                                 case HL_BRACKETS:  color_code = currentTheme->hl_brackets; break;
+                                case HL_COMMENT:   color_code = currentTheme->hl_comment; break;
                             }
 
                             if (color_code) {

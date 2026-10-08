@@ -104,6 +104,7 @@ typedef struct {
     const char *status_bg;
     const char *status_fg;
     const char *message_fg;
+    const char *hl_comment;
 } ThemePalette;
 
 extern ThemePalette themes[NUM_THEMES];
@@ -123,12 +124,15 @@ enum HL_TYPE {
     HL_QUALIFIER,
     HL_STRUCT,
     HL_SPECIAL,
+
+    HL_COMMENT
 };
 
 typedef struct erow {
     char* chars;
     u_i8* hl;
     int len;
+    bool hlOpenComment;
 } erow;
 
 struct editorConfig {
@@ -163,6 +167,7 @@ struct editorConfig {
     bool autoindent;
     bool syntax;
     bool isUndoing;
+    bool ignoreCase;
 };
 
 extern struct editorConfig E;
@@ -188,6 +193,7 @@ void normalize(int* startX, int* startY, int* endX, int* endY);
 void splitRow(void);
 void showMessageAtCommandLine(const char *s, int len);
 void sendCommand(void);
+void parseCommand(const char *cmd);
 void deleteCharBeforeCursorAtCommandLine(void);
 void insertCharAtCommandLine(int c);
 void deleteCharAtCursorAtCommandLine(void);
@@ -204,6 +210,8 @@ void insertRow(int at);
 void insertRowWithText(int at, const char *s, size_t len);
 void deleteRow(int at);
 void mergeLines(int lineToDeleteY, int lineToMergeWithY);
+char* baseNextFind(char* needle, int x, int y, int offset, int *res_idx);
+char* baseReverseFind(char* needle, int x, int y, int *res_idx);
 
 // file.c
 void editorSetFilename(const char *path);
