@@ -233,7 +233,6 @@ void bufferAppendRows(buffer *b) {
     }
 
     ThemePalette *currentTheme = &themes[E.theme];
-    int lastHl = -1;
     
     bufferAppend(b, currentTheme->hl_default, strlen(currentTheme->hl_default));
     bufferAppend(b, currentTheme->bg_color, strlen(currentTheme->bg_color));
@@ -242,6 +241,7 @@ void bufferAppendRows(buffer *b) {
 
     for (int i = E.rowoff; i < E.screenHeight+E.rowoff; i++) {
         int numWidth = 0;
+        int lastHl = -1;
 
         if ((E.showLineNumbers || E.showRLineNumbers) && (E.numrows > i || (E.numrows == 0 && i == 0)))
         {
@@ -288,6 +288,7 @@ void bufferAppendRows(buffer *b) {
                         if (!hl_active) {
                             bufferAppend(b, REVERSE_COLORS, REVERSE_COLORS_B);
                             hl_active = true;
+                            lastHl = -1;
                         }
                         bufferAppend(b, &row->chars[cx], 1);
                     }
