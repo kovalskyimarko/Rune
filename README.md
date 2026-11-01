@@ -3,6 +3,11 @@
 Rune is a lighweight terminal editor written for unix system in C.
 This project is a personal learning endeavor to understand low-level text editing, file I/O, terminal input handling, memory managment etc.
 
+<p align="center">
+  <img src="images/rune_dark.png" alt="Rune - Dark Theme (Astra)" width="49%" />
+  <img src="images/rune_light.png" alt="Rune - Light Theme (Clouds)" width="49%" />
+</p>
+
 ---
 
 ## Features (Implemented)
