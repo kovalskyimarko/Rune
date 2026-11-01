@@ -1,0 +1,18 @@
+# Object files
+*.o
+
+# Binaries & Executables
+rune
+main
+run_test_*
+
+# Debug symbols
+*.dSYM/
+
+# Editor & OS files
+.DS_Store
+.vscode/
+
+# Scratch files
+test.c
+test_hl.c

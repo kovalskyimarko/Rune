@@ -9,8 +9,9 @@ debug: CFLAGS += -g
 debug: rebuild
 
 # Source files
-SRCS = main.c terminal.c  input_processkeys.c input.c output.c file.c syntax_parser.c xmemory.c commands.c config.c action.c
+SRCS = main.c terminal.c input_processkeys.c input.c output.c file.c syntax_parser.c xmemory.c commands.c config.c action.c
 
+OBJS = $(SRCS:.c=.o)
 OBJS_NO_MAIN = $(filter-out main.o tests/%, $(OBJS))
 
 test: $(OBJS_NO_MAIN)
@@ -29,9 +30,9 @@ test: $(OBJS_NO_MAIN)
 	./run_test_syntax
 	$(CC) $(CFLAGS) -o run_test_config tests/test_config.c $(OBJS_NO_MAIN)
 	./run_test_config
+	$(CC) $(CFLAGS) -o run_test_file tests/test_file.c $(OBJS_NO_MAIN)
+	./run_test_file
 
-# Object files
-OBJS = $(SRCS:.c=.o)
 
 # Executable name
 TARGET = rune
@@ -49,7 +50,7 @@ $(TARGET): $(OBJS)
 
 # Clean objects and executable
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) run_test_*
 
 # Rebuild everything
 rebuild: clean all
